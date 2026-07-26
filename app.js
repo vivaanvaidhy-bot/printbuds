@@ -17,11 +17,16 @@ const esc = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&am
 const today = () => new Date().toISOString().slice(0, 10);
 const save = () => localStorage.setItem(key, JSON.stringify(state));
 
-async function requestInventory(options) {
-  const response = await fetch('/api/inventory', options);
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || 'The inventory could not be saved. Ask a grown-up for help.');
-  return body;
+async function requestInventory(options = {}) {
+  const method = options.method || 'GET';
+  if (method === 'GET') return structuredClone(state.products);
+  const input = JSON.parse(options.body || '{}');
+  if (method === 'POST') return { ...input, id: crypto.randomUUID() };
+  const product = state.products.find(item => item.id === input.id);
+  if (!product) throw new Error('Toy not found.');
+  if (typeof input.photo === 'string') return { ...product, photo: input.photo };
+  if (!Number.isInteger(input.qty) || input.qty < 0) throw new Error('Please enter a valid toy count.');
+  return { ...product, qty: input.qty };
 }
 
 function show(id, message, type = '') { $(id).textContent = message; $(id).className = `status ${type}`.trim(); }
@@ -106,10 +111,7 @@ function renderMoney() {
 
 function render() { renderToday(); renderCount(); renderInventory(); renderActivity(); renderMoney(); }
 
-async function loadInventory() {
-  try { state.products = await requestInventory(); save(); render(); }
-  catch { show('countStatus', 'Start the app server so your inventory can be saved.', 'error'); }
-}
+async function loadInventory() { state.products = await requestInventory(); save(); render(); }
 
 function openOrder(id) { orderProduct = state.products.find(product => product.id === id); if (!orderProduct) return; $('orderTitle').textContent = `Order ${orderProduct.name}`; $('orderPhoto').src = orderProduct.photo; $('orderQty').max = orderProduct.qty; $('orderDialog').showModal(); }
 

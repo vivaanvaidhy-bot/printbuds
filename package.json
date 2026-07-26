@@ -3,8 +3,5 @@
   "version": "1.0.0",
   "description": "Inventory and sales tracker for Mini Maker Shop",
   "private": true,
-  "scripts": {
-    "start": "node server.js"
-  },
   "type": "module"
 }
