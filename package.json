@@ -1,0 +1,20 @@
+{
+  "name": "repo",
+  "version": "1.0.0",
+  "description": "Inventory and sales tracker for Mini Maker Shop",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^10.7.10",
+    "@netlify/database": "^1.1.0",
+    "@netlify/functions": "^5.3.0",
+    "drizzle-orm": "^1.0.0-beta.22"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^1.0.0-beta.22",
+    "typescript": "^7.0.2"
+  }
+}
