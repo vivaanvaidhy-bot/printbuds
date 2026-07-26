@@ -85,9 +85,10 @@ function renderCount() {
 function renderInventory() {
   const products = state.products;
   $('sellToy').innerHTML = products.filter(product => product.qty > 0).map(product => `<option value="${product.id}">${esc(product.name)} — ${product.qty} ready (${money(product.price)})</option>`).join('') || '<option value="">No toys ready yet</option>';
-  $('inventory').innerHTML = products.length ? products.map(product => `<div class="product"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3><p><span class="badge ${product.qty <= state.settings.lowStockLimit ? 'low' : ''}">${product.qty} ready</span></p><p>Making one costs <b>${money(productCost(product))}</b> · Price: <b>${money(product.price)}</b></p></div></div>`).join('') : '<p class="empty">Add your first toy above.</p>';
+  $('inventory').innerHTML = products.length ? products.map(product => `<div class="product"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3><p><span class="badge ${product.qty <= state.settings.lowStockLimit ? 'low' : ''}">${product.qty} ready</span></p><p>Making one costs <b>${money(productCost(product))}</b> · Price: <b>${money(product.price)}</b></p>${product.photo ? '' : `<label class="small">Add a photo later<input data-photo-for="${product.id}" type="file" accept="image/*"></label>`}</div></div>`).join('') : '<p class="empty">Add your first toy above.</p>';
   $('customerShop').innerHTML = products.filter(product => product.qty > 0).map(product => `<button class="shop-card" data-order="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge">${money(product.price)}</span><br><span class="small">${product.qty} available · Tap to order</span></button>`).join('') || '<p class="empty">New toys will appear here.</p>';
   document.querySelectorAll('[data-order]').forEach(button => button.onclick = () => openOrder(button.dataset.order));
+  document.querySelectorAll('[data-photo-for]').forEach(input => input.onchange = event => uploadInventoryPhoto(input.dataset.photoFor, event.target.files[0]));
 }
 
 function renderActivity() {
@@ -111,6 +112,20 @@ async function loadInventory() {
 }
 
 function openOrder(id) { orderProduct = state.products.find(product => product.id === id); if (!orderProduct) return; $('orderTitle').textContent = `Order ${orderProduct.name}`; $('orderPhoto').src = orderProduct.photo; $('orderQty').max = orderProduct.qty; $('orderDialog').showModal(); }
+
+async function uploadInventoryPhoto(id, file) {
+  const product = state.products.find(item => item.id === id);
+  if (!product || !file) return;
+  try {
+    const photo = await compressedPhoto(file);
+    const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, photo }) });
+    product.photo = updated.photo;
+    addActivity({ message: `Added a photo for ${product.name}!`, productId: id, undoable: false });
+    render();
+  } catch (error) {
+    alert(error.message || 'That photo could not be added. Please try again.');
+  }
+}
 
 async function undoActivity(id) {
   const activity = state.activities.find(item => item.id === id); if (!activity || !activity.undoable) return;
@@ -152,6 +167,7 @@ function preparePhoto(file) {
 
 function setupPhotoPicker() {
   const library = $('photo');
+  library.closest('.card').querySelector('p').textContent = 'Photos are optional. Take one now, choose one from this iPad, or add one later from inventory.';
   library.removeAttribute('capture');
   library.setAttribute('aria-label', 'Choose a photo already on this iPad');
   const camera = document.createElement('input');
@@ -168,6 +184,11 @@ function setupPhotoPicker() {
   cameraLabel.append(camera);
   library.before(libraryLabel);
   libraryLabel.append(library);
+  const skip = document.createElement('button');
+  skip.type = 'button';
+  skip.textContent = 'Add without a photo for now';
+  skip.onclick = () => { photoData = ''; $('preview').hidden = true; show('addStatus', 'No problem! Add the toy below, then another helper can upload its photo later.', 'success'); document.getElementById('makeForm').scrollIntoView({ behavior: 'smooth' }); };
+  libraryLabel.after(skip);
   camera.addEventListener('change', event => preparePhoto(event.target.files[0]));
 }
 
