@@ -26,6 +26,7 @@ const listProducts = db.prepare('SELECT id, name, quantity AS qty, material, lab
 const findProduct = db.prepare('SELECT id, name, quantity AS qty, material, labor, price, photo FROM products WHERE id = ?');
 const insertProduct = db.prepare('INSERT INTO products (id, name, quantity, material, labor, price, photo) VALUES (?, ?, ?, ?, ?, ?, ?)');
 const updateQuantity = db.prepare('UPDATE products SET quantity = ? WHERE id = ?');
+const updatePhoto = db.prepare('UPDATE products SET photo = ? WHERE id = ?');
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -75,6 +76,12 @@ async function handleInventory(request, response) {
   if (request.method === 'PATCH') {
     const input = await readJson(request);
     const id = typeof input.id === 'string' ? input.id : '';
+    if (typeof input.photo === 'string') {
+      if (!id || input.photo.length > 2_000_000) return sendJson(response, 400, { error: 'Please choose a smaller photo.' });
+      updatePhoto.run(input.photo, id);
+      const product = findProduct.get(id);
+      return product ? sendJson(response, 200, product) : sendJson(response, 404, { error: 'Toy not found.' });
+    }
     const qty = Number(input.qty);
     if (!id || !Number.isInteger(qty) || qty < 0) return sendJson(response, 400, { error: 'Please enter a valid inventory quantity.' });
     updateQuantity.run(qty, id);
