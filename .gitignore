@@ -1,2 +1,4 @@
 node_modules/
 .netlify/state.json
+data/*.sqlite
+data/*.sqlite-*
