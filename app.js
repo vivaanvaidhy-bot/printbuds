@@ -124,7 +124,7 @@ $('photo').addEventListener('change', async event => { const file = event.target
 
 function compressedPhoto(file) { return new Promise((resolve, reject) => { const image = new Image(); const url = URL.createObjectURL(file); image.onload = () => { const size = Math.min(1, 900 / Math.max(image.naturalWidth, image.naturalHeight)); const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * size)); canvas.height = Math.max(1, Math.round(image.naturalHeight * size)); const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height); URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/jpeg', .75)); }; image.onerror = () => { URL.revokeObjectURL(url); reject(); }; image.src = url; }); }
 
-$('makeForm').addEventListener('submit', async event => { event.preventDefault(); const button = $('addInventory'); button.disabled = true; const product = { name: $('name').value.trim(), qty: +$('quantity').value, material: +$('grams').value * +$('perGram').value, labor: +$('hours').value * +$('labor').value, price: +$('askingPrice').value, photo: photoData }; try { const created = await requestInventory({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) }); state.products.push(created); addActivity({ message: `Added ${created.qty} ${created.name}!`, productId: created.id, previousQty: 0, undoable: false }); event.target.reset(); $('preview').hidden = true; photoData = ''; pricing(); render(); show('addStatus', `Awesome! ${created.name} is in your shop.`, 'success'); switchView('today'); } catch (error) { show('addStatus', error.message, 'error'); } finally { button.disabled = false; } });
+$('makeForm').addEventListener('submit', async event => { event.preventDefault(); const button = $('addInventory'); button.disabled = true; const product = { name: $('name').value.trim(), qty: +$('quantity').value, material: +$('grams').value * +$('perGram').value, labor: +$('hours').value * +$('labor').value, price: +$('askingPrice').value, photo: photoData }; try { const created = await requestInventory({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) }); state.products.push(created); addActivity({ message: `Added ${created.qty} ${created.name}!`, productId: created.id, previousQty: 0, undoable: false }); event.target.reset(); $('preview').hidden = true; photoData = ''; pricing(); render(); show('addStatus', `Awesome! ${created.name} is in your shop. Add another one when you are ready.`, 'success'); } catch (error) { show('addStatus', error.message, 'error'); } finally { button.disabled = false; } });
 
 $('saveCount').onclick = async () => { const changes = state.products.filter(product => (state.countDraft[product.id] ?? product.qty) !== product.qty); const button = $('saveCount'); button.disabled = true; try { for (const product of changes) { const previousQty = product.qty; const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: state.countDraft[product.id] }) }); product.qty = updated.qty; addActivity({ message: `Counted ${updated.qty} ${updated.name}`, productId: updated.id, previousQty, undoable: true }); } const last = state.settings.lastCountDate; state.settings.countStreak = last === today() ? state.settings.countStreak : state.settings.countStreak + 1; state.settings.lastCountDate = today(); state.countDraft = {}; save(); render(); show('countStatus', '🎉 Great job! Your shelf and your app match!', 'success'); } catch (error) { show('countStatus', error.message, 'error'); } finally { button.disabled = false; } };
 
@@ -139,5 +139,37 @@ $('makeForm').addEventListener('reset', () => setTimeout(setNewToyDefaults));
 document.querySelectorAll('[data-view]').forEach(button => button.onclick = () => switchView(button.dataset.view));
 document.querySelectorAll('[data-go]').forEach(button => button.onclick = () => switchView(button.dataset.go));
 
-setNewToyDefaults(); render(); loadInventory();
+function preparePhoto(file) {
+  if (!file) return;
+  show('addStatus', 'Getting your photo ready…');
+  compressedPhoto(file).then(image => {
+    photoData = image;
+    $('preview').src = image;
+    $('preview').hidden = false;
+    show('addStatus', 'Photo ready!', 'success');
+  }).catch(() => show('addStatus', 'That photo did not work. Try another one.', 'error'));
+}
+
+function setupPhotoPicker() {
+  const library = $('photo');
+  library.removeAttribute('capture');
+  library.setAttribute('aria-label', 'Choose a photo already on this iPad');
+  const camera = document.createElement('input');
+  camera.type = 'file';
+  camera.accept = 'image/*';
+  camera.capture = 'environment';
+  camera.id = 'cameraPhoto';
+  camera.setAttribute('aria-label', 'Take a new photo with the camera');
+  const cameraLabel = document.createElement('label');
+  cameraLabel.textContent = 'Take a new photo';
+  const libraryLabel = document.createElement('label');
+  libraryLabel.textContent = 'Or choose a photo from this iPad';
+  library.before(cameraLabel);
+  cameraLabel.append(camera);
+  library.before(libraryLabel);
+  libraryLabel.append(library);
+  camera.addEventListener('change', event => preparePhoto(event.target.files[0]));
+}
+
+setupPhotoPicker(); setNewToyDefaults(); render(); loadInventory();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
