@@ -97,7 +97,7 @@ function renderMoney() {
   document.querySelector('#money .grid .stat:nth-child(2) span').textContent = 'Supply purchases';
 }
 
-function render() { renderToday(); renderCount(); renderInventory(); renderActivity(); renderMoney(); }
+function render() { renderToday(); renderCount(); renderInventory(); renderActivity(); }
 
 async function loadInventory() { state.products = await requestInventory(); save(); render(); }
 
@@ -133,7 +133,7 @@ $('makeForm').addEventListener('submit', async event => { event.preventDefault()
 
 $('saveCount').onclick = async () => { const changes = state.products.filter(product => (state.countDraft[product.id] ?? product.qty) !== product.qty); const button = $('saveCount'); button.disabled = true; try { for (const product of changes) { const previousQty = product.qty; const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: state.countDraft[product.id] }) }); product.qty = updated.qty; addActivity({ message: `Counted ${updated.qty} ${updated.name}`, productId: updated.id, previousQty, undoable: true }); } const last = state.settings.lastCountDate; state.settings.countStreak = last === today() ? state.settings.countStreak : state.settings.countStreak + 1; state.settings.lastCountDate = today(); state.countDraft = {}; save(); render(); show('countStatus', '🎉 Great job! Your shelf and your app match!', 'success'); } catch (error) { show('countStatus', error.message, 'error'); } finally { button.disabled = false; } };
 
-$('saleForm').addEventListener('submit', async event => { event.preventDefault(); const product = state.products.find(item => item.id === $('sellToy').value); const qty = +$('sellQty').value; if (!product || qty > product.qty) return alert('Please choose a toy that is available.'); const previousQty = product.qty; try { const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: product.qty - qty }) }); product.qty = updated.qty; const sale = { name: product.name, qty, price: +$('sellPrice').value, unitCost: productCost(product), buyer: $('buyer').value, date: today() }; state.sales.push(sale); addActivity({ message: `Sold ${qty} ${product.name}! Great work!`, productId: product.id, previousQty, saleIndex: state.sales.length - 1, undoable: true }); event.target.reset(); save(); render(); switchView('today'); } catch (error) { alert(error.message); } });
+$('saleForm').addEventListener('submit', async event => { event.preventDefault(); const product = state.products.find(item => item.id === $('sellToy').value); const qty = +$('sellQty').value; const recordType = $('recordType').value; if (!product || qty > product.qty) return alert('Please choose a toy that is available.'); const previousQty = product.qty; try { const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: product.qty - qty }) }); product.qty = updated.qty; let saleIndex; if (recordType === 'sale') { const sale = { name: product.name, qty, price: +$('sellPrice').value, unitCost: 0, buyer: $('buyer').value, date: today() }; state.sales.push(sale); saleIndex = state.sales.length - 1; } const messages = { sale: `Sold ${qty} ${product.name}! Great work!`, free: `Gave ${qty} ${product.name} away for free.`, broken: `Marked ${qty} ${product.name} as broken.` }; addActivity({ message: messages[recordType], productId: product.id, previousQty, saleIndex, undoable: true }); event.target.reset(); updateSaleForm(); save(); render(); switchView('today'); } catch (error) { alert(error.message); } });
 
 $('agreement').addEventListener('submit', event => { event.preventDefault(); state.agreement = { shopKeep: +$('shopKeep').value, one: $('partnerOne').value, two: $('partnerTwo').value, share: +$('partnerShare').value }; save(); render(); });
 $('saveSettings').onclick = () => { state.settings.lowStockLimit = Math.max(0, +$('lowStockLimit').value || 0); save(); render(); show('parentStatus', 'Grown-up settings saved.', 'success'); };
@@ -189,18 +189,22 @@ function setupSimpleInventory() {
   $('profitTarget').closest('label').remove();
   $('suggestion').remove();
   $('askingPrice').parentElement.firstChild.nodeValue = 'Price for one toy ';
-  const parentCard = document.querySelector('#parent .card');
-  parentCard.insertAdjacentHTML('afterend', `<form id="supplyForm" class="card parent"><h2>Buy supplies once</h2><p class="hint">When a grown-up buys filament, write down the whole purchase here. You do not need to split it across every toy.</p><label>What did you buy?<input id="supplyName" required placeholder="Blue filament"></label><label>How much did it cost?<input id="supplyCost" required type="number" min="0.01" step="0.01" placeholder="20.00"></label><button class="primary" style="margin-top:14px">Save supply purchase</button><p id="supplyStatus" class="status" role="status"></p></form>`);
-  $('supplyForm').addEventListener('submit', event => {
-    event.preventDefault();
-    const supply = { name: $('supplyName').value.trim(), cost: +$('supplyCost').value, date: today() };
-    if (!supply.name || !Number.isFinite(supply.cost) || supply.cost <= 0) return;
-    state.supplies.push(supply);
-    addActivity({ message: `Bought supplies: ${supply.name} for ${money(supply.cost)}`, undoable: false });
-    event.target.reset();
-    render();
-    show('supplyStatus', 'Supply purchase saved.', 'success');
-  });
+  document.querySelector('[data-view="money"]').remove();
+  document.querySelector('[data-view="parent"]').remove();
+  $('money').remove();
+  $('parent').remove();
+  const saleForm = $('saleForm');
+  saleForm.querySelector('label').insertAdjacentHTML('afterend', `<label>What happened?<select id="recordType"><option value="sale">I sold it</option><option value="free">I gave it away for free</option><option value="broken">It broke</option></select></label>`);
+  $('recordType').addEventListener('change', updateSaleForm);
+  updateSaleForm();
+}
+
+function updateSaleForm() {
+  const isSale = $('recordType').value === 'sale';
+  const priceLabel = $('sellPrice').closest('label');
+  priceLabel.hidden = !isSale;
+  $('sellPrice').required = isSale;
+  $('buyer').closest('label').firstChild.nodeValue = isSale ? 'Who bought it? (optional) ' : 'What happened? (optional) ';
 }
 
 setupPhotoPicker(); setupSimpleInventory(); setNewToyDefaults(); render(); loadInventory();
