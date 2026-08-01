@@ -1,10 +1,10 @@
 const key = 'mini-maker-shop-v2';
-const defaults = { products: [], sales: [], orders: [], activities: [], countDraft: {}, settings: { lowStockLimit: 2, lastCountDate: '', countStreak: 0 }, agreement: { shopKeep: 20, one: 'Me', two: 'Partner', share: 50 } };
+const defaults = { products: [], sales: [], orders: [], supplies: [], activities: [], countDraft: {}, settings: { lowStockLimit: 2, lastCountDate: '', countStreak: 0 }, agreement: { shopKeep: 20, one: 'Me', two: 'Partner', share: 50 } };
 
 function readState() {
   try {
     const saved = JSON.parse(localStorage.getItem(key) || localStorage.getItem('mini-maker-shop-v1') || '{}');
-    return { ...defaults, ...saved, products: Array.isArray(saved.products) ? saved.products : [], sales: Array.isArray(saved.sales) ? saved.sales : [], orders: Array.isArray(saved.orders) ? saved.orders : [], activities: Array.isArray(saved.activities) ? saved.activities : [], countDraft: saved.countDraft || {}, settings: { ...defaults.settings, ...(saved.settings || {}) }, agreement: { ...defaults.agreement, ...(saved.agreement || {}) } };
+    return { ...defaults, ...saved, products: Array.isArray(saved.products) ? saved.products : [], sales: Array.isArray(saved.sales) ? saved.sales : [], orders: Array.isArray(saved.orders) ? saved.orders : [], supplies: Array.isArray(saved.supplies) ? saved.supplies : [], activities: Array.isArray(saved.activities) ? saved.activities : [], countDraft: saved.countDraft || {}, settings: { ...defaults.settings, ...(saved.settings || {}) }, agreement: { ...defaults.agreement, ...(saved.agreement || {}) } };
   } catch { return structuredClone(defaults); }
 }
 
@@ -32,30 +32,16 @@ async function requestInventory(options = {}) {
 function show(id, message, type = '') { $(id).textContent = message; $(id).className = `status ${type}`.trim(); }
 function switchView(id) { document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === id)); document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === id)); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function productCost(product) { return product.material + product.labor; }
-function total() { const sales = state.sales.reduce((sum, sale) => sum + sale.price * sale.qty, 0); const cost = state.sales.reduce((sum, sale) => sum + sale.unitCost * sale.qty, 0); return { sales, cost, profit: sales - cost }; }
+function total() { const sales = state.sales.reduce((sum, sale) => sum + sale.price * sale.qty, 0); const cost = state.supplies.reduce((sum, supply) => sum + supply.cost, 0); return { sales, cost, profit: sales - cost }; }
 function addActivity(activity) { state.activities.unshift({ id: crypto.randomUUID(), at: new Date().toLocaleString(), ...activity }); state.activities = state.activities.slice(0, 30); save(); }
 
-function pricing() {
-  const material = (+$('grams').value || 0) * (+$('perGram').value || 0);
-  const labor = (+$('hours').value || 0) * (+$('labor').value || 0);
-  const cost = material + labor;
-  const target = +$('profitTarget').value || 0;
-  const price = cost * (1 + target / 100);
-  $('suggestion').innerHTML = `Plastic: <b>${money(material)}</b> + helper time: <b>${money(labor)}</b><br>It costs <b>${money(cost)}</b> to make one toy.<br><b>A fair price is ${money(price)}</b>.`;
-}
+function pricing() { setDefaultPrice(); }
 
 function setDefaultPrice() {
   if (!$('askingPrice').value) $('askingPrice').value = '5.00';
 }
 
-function setNewToyDefaults() {
-  $('grams').value = '18';
-  $('perGram').value = '0.03';
-  $('hours').value = '2';
-  $('labor').value = '1.00';
-  setDefaultPrice();
-  pricing();
-}
+function setNewToyDefaults() { setDefaultPrice(); }
 
 function renderToday() {
   const countedToday = state.settings.lastCountDate === today();
@@ -91,6 +77,7 @@ function renderInventory() {
   const products = state.products;
   $('sellToy').innerHTML = products.filter(product => product.qty > 0).map(product => `<option value="${product.id}">${esc(product.name)} — ${product.qty} ready (${money(product.price)})</option>`).join('') || '<option value="">No toys ready yet</option>';
   $('inventory').innerHTML = products.length ? products.map(product => `<div class="product"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3><p><span class="badge ${product.qty <= state.settings.lowStockLimit ? 'low' : ''}">${product.qty} ready</span></p><p>Making one costs <b>${money(productCost(product))}</b> · Price: <b>${money(product.price)}</b></p>${product.photo ? '' : `<label class="small">Add a photo later<input data-photo-for="${product.id}" type="file" accept="image/*"></label>`}</div></div>`).join('') : '<p class="empty">Add your first toy above.</p>';
+  document.querySelectorAll('#inventory .product').forEach((card, index) => { card.querySelectorAll('p')[1].innerHTML = `Selling price: <b>${money(products[index].price)}</b>`; });
   $('customerShop').innerHTML = products.filter(product => product.qty > 0).map(product => `<button class="shop-card" data-order="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge">${money(product.price)}</span><br><span class="small">${product.qty} available · Tap to order</span></button>`).join('') || '<p class="empty">New toys will appear here.</p>';
   document.querySelectorAll('[data-order]').forEach(button => button.onclick = () => openOrder(button.dataset.order));
   document.querySelectorAll('[data-photo-for]').forEach(input => input.onchange = event => uploadInventoryPhoto(input.dataset.photoFor, event.target.files[0]));
@@ -107,6 +94,7 @@ function renderMoney() {
   $('totalSales').textContent = money(totals.sales); $('totalCost').textContent = money(totals.cost); $('totalProfit').textContent = money(totals.profit);
   $('split').innerHTML = `<p>The shop saves <b>${money(kept)}</b> for future supplies.</p><div class="grid"><div class="stat gold"><span>${esc(agreement.one)}</span><strong>${money(one)}</strong></div><div class="stat gold"><span>${esc(agreement.two)}</span><strong>${money(remaining - one)}</strong></div><div class="stat"><span>Still shared</span><strong>${money(remaining)}</strong></div></div><p class="hint">This picture is based on every sale you wrote down. Honest records make a strong shop.</p>`;
   $('shopKeep').value = agreement.shopKeep; $('partnerOne').value = agreement.one; $('partnerTwo').value = agreement.two; $('partnerShare').value = agreement.share; $('lowStockLimit').value = state.settings.lowStockLimit;
+  document.querySelector('#money .grid .stat:nth-child(2) span').textContent = 'Supply purchases';
 }
 
 function render() { renderToday(); renderCount(); renderInventory(); renderActivity(); renderMoney(); }
@@ -141,7 +129,7 @@ $('photo').addEventListener('change', async event => { const file = event.target
 
 function compressedPhoto(file) { return new Promise((resolve, reject) => { const image = new Image(); const url = URL.createObjectURL(file); image.onload = () => { const size = Math.min(1, 900 / Math.max(image.naturalWidth, image.naturalHeight)); const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(image.naturalWidth * size)); canvas.height = Math.max(1, Math.round(image.naturalHeight * size)); const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0, canvas.width, canvas.height); URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/jpeg', .75)); }; image.onerror = () => { URL.revokeObjectURL(url); reject(); }; image.src = url; }); }
 
-$('makeForm').addEventListener('submit', async event => { event.preventDefault(); const button = $('addInventory'); button.disabled = true; const product = { name: $('name').value.trim(), qty: +$('quantity').value, material: +$('grams').value * +$('perGram').value, labor: +$('hours').value * +$('labor').value, price: +$('askingPrice').value, photo: photoData }; try { const created = await requestInventory({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) }); state.products.push(created); addActivity({ message: `Added ${created.qty} ${created.name}!`, productId: created.id, previousQty: 0, undoable: false }); event.target.reset(); $('preview').hidden = true; photoData = ''; pricing(); render(); show('addStatus', `Awesome! ${created.name} is in your shop. Add another one when you are ready.`, 'success'); } catch (error) { show('addStatus', error.message, 'error'); } finally { button.disabled = false; } });
+$('makeForm').addEventListener('submit', async event => { event.preventDefault(); const button = $('addInventory'); button.disabled = true; const product = { name: $('name').value.trim(), qty: +$('quantity').value, material: 0, labor: 0, price: +$('askingPrice').value, photo: photoData }; try { const created = await requestInventory({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) }); state.products.push(created); addActivity({ message: `Added ${created.qty} ${created.name}!`, productId: created.id, previousQty: 0, undoable: false }); event.target.reset(); $('preview').hidden = true; photoData = ''; pricing(); render(); show('addStatus', `Awesome! ${created.name} is in your shop. Add another one when you are ready.`, 'success'); } catch (error) { show('addStatus', error.message, 'error'); } finally { button.disabled = false; } });
 
 $('saveCount').onclick = async () => { const changes = state.products.filter(product => (state.countDraft[product.id] ?? product.qty) !== product.qty); const button = $('saveCount'); button.disabled = true; try { for (const product of changes) { const previousQty = product.qty; const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: state.countDraft[product.id] }) }); product.qty = updated.qty; addActivity({ message: `Counted ${updated.qty} ${updated.name}`, productId: updated.id, previousQty, undoable: true }); } const last = state.settings.lastCountDate; state.settings.countStreak = last === today() ? state.settings.countStreak : state.settings.countStreak + 1; state.settings.lastCountDate = today(); state.countDraft = {}; save(); render(); show('countStatus', '🎉 Great job! Your shelf and your app match!', 'success'); } catch (error) { show('countStatus', error.message, 'error'); } finally { button.disabled = false; } };
 
@@ -194,5 +182,26 @@ function setupPhotoPicker() {
   camera.addEventListener('change', event => preparePhoto(event.target.files[0]));
 }
 
-setupPhotoPicker(); setNewToyDefaults(); render(); loadInventory();
+function setupSimpleInventory() {
+  const costGrid = $('grams').closest('.two');
+  costGrid.previousElementSibling?.remove();
+  costGrid.remove();
+  $('profitTarget').closest('label').remove();
+  $('suggestion').remove();
+  $('askingPrice').parentElement.firstChild.nodeValue = 'Price for one toy ';
+  const parentCard = document.querySelector('#parent .card');
+  parentCard.insertAdjacentHTML('afterend', `<form id="supplyForm" class="card parent"><h2>Buy supplies once</h2><p class="hint">When a grown-up buys filament, write down the whole purchase here. You do not need to split it across every toy.</p><label>What did you buy?<input id="supplyName" required placeholder="Blue filament"></label><label>How much did it cost?<input id="supplyCost" required type="number" min="0.01" step="0.01" placeholder="20.00"></label><button class="primary" style="margin-top:14px">Save supply purchase</button><p id="supplyStatus" class="status" role="status"></p></form>`);
+  $('supplyForm').addEventListener('submit', event => {
+    event.preventDefault();
+    const supply = { name: $('supplyName').value.trim(), cost: +$('supplyCost').value, date: today() };
+    if (!supply.name || !Number.isFinite(supply.cost) || supply.cost <= 0) return;
+    state.supplies.push(supply);
+    addActivity({ message: `Bought supplies: ${supply.name} for ${money(supply.cost)}`, undoable: false });
+    event.target.reset();
+    render();
+    show('supplyStatus', 'Supply purchase saved.', 'success');
+  });
+}
+
+setupPhotoPicker(); setupSimpleInventory(); setNewToyDefaults(); render(); loadInventory();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
