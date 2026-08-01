@@ -1,5 +1,5 @@
 const key = 'mini-maker-shop-v2';
-const defaults = { products: [], sales: [], orders: [], supplies: [], activities: [], countDraft: {}, settings: { lowStockLimit: 2, lastCountDate: '', countStreak: 0 }, agreement: { shopKeep: 20, one: 'Me', two: 'Partner', share: 50 } };
+const defaults = { products: [], sales: [], orders: [], supplies: [], activities: [], countDraft: {}, settings: { lowStockLimit: 2, lastCountDate: '', countStreak: 0, adultPin: '' }, agreement: { shopKeep: 20, one: 'Me', two: 'Partner', share: 50 } };
 
 function readState() {
   try {
@@ -97,7 +97,7 @@ function renderMoney() {
   document.querySelector('#money .grid .stat:nth-child(2) span').textContent = 'Supply purchases';
 }
 
-function render() { renderToday(); renderCount(); renderInventory(); renderActivity(); }
+function render() { renderToday(); renderCount(); renderInventory(); renderActivity(); renderPrivateSummary(); }
 
 async function loadInventory() { state.products = await requestInventory(); save(); render(); }
 
@@ -133,7 +133,7 @@ $('makeForm').addEventListener('submit', async event => { event.preventDefault()
 
 $('saveCount').onclick = async () => { const changes = state.products.filter(product => (state.countDraft[product.id] ?? product.qty) !== product.qty); const button = $('saveCount'); button.disabled = true; try { for (const product of changes) { const previousQty = product.qty; const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: state.countDraft[product.id] }) }); product.qty = updated.qty; addActivity({ message: `Counted ${updated.qty} ${updated.name}`, productId: updated.id, previousQty, undoable: true }); } const last = state.settings.lastCountDate; state.settings.countStreak = last === today() ? state.settings.countStreak : state.settings.countStreak + 1; state.settings.lastCountDate = today(); state.countDraft = {}; save(); render(); show('countStatus', '🎉 Great job! Your shelf and your app match!', 'success'); } catch (error) { show('countStatus', error.message, 'error'); } finally { button.disabled = false; } };
 
-$('saleForm').addEventListener('submit', async event => { event.preventDefault(); const product = state.products.find(item => item.id === $('sellToy').value); const qty = +$('sellQty').value; const recordType = $('recordType').value; if (!product || qty > product.qty) return alert('Please choose a toy that is available.'); const previousQty = product.qty; try { const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: product.qty - qty }) }); product.qty = updated.qty; let saleIndex; if (recordType === 'sale') { const sale = { name: product.name, qty, price: +$('sellPrice').value, unitCost: 0, buyer: $('buyer').value, date: today() }; state.sales.push(sale); saleIndex = state.sales.length - 1; } const messages = { sale: `Sold ${qty} ${product.name}! Great work!`, free: `Gave ${qty} ${product.name} away for free.`, broken: `Marked ${qty} ${product.name} as broken.` }; addActivity({ message: messages[recordType], productId: product.id, previousQty, saleIndex, undoable: true }); event.target.reset(); updateSaleForm(); save(); render(); switchView('today'); } catch (error) { alert(error.message); } });
+$('saleForm').addEventListener('submit', async event => { event.preventDefault(); const product = state.products.find(item => item.id === $('sellToy').value); const qty = +$('sellQty').value; const recordType = $('recordType').value; if (!product || qty > product.qty) return alert('Please choose a toy that is available.'); const previousQty = product.qty; try { const updated = await requestInventory({ method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: product.id, qty: product.qty - qty }) }); product.qty = updated.qty; let saleIndex; if (recordType === 'sale') { const sale = { name: product.name, qty, price: +$('sellPrice').value, unitCost: 0, buyer: $('buyer').value, date: today() }; state.sales.push(sale); saleIndex = state.sales.length - 1; } const messages = { sale: `Sold ${qty} ${product.name}! Great work!`, free: `Gave ${qty} ${product.name} away for free.`, broken: `Marked ${qty} ${product.name} as broken.` }; addActivity({ message: messages[recordType], productId: product.id, previousQty, saleIndex, recordType, qty, undoable: true }); event.target.reset(); updateSaleForm(); save(); render(); switchView('today'); } catch (error) { alert(error.message); } });
 
 $('agreement').addEventListener('submit', event => { event.preventDefault(); state.agreement = { shopKeep: +$('shopKeep').value, one: $('partnerOne').value, two: $('partnerTwo').value, share: +$('partnerShare').value }; save(); render(); });
 $('saveSettings').onclick = () => { state.settings.lowStockLimit = Math.max(0, +$('lowStockLimit').value || 0); save(); render(); show('parentStatus', 'Grown-up settings saved.', 'success'); };
@@ -182,6 +182,45 @@ function setupPhotoPicker() {
   camera.addEventListener('change', event => preparePhoto(event.target.files[0]));
 }
 
+function activityKind(activity) {
+  if (activity.recordType) return activity.recordType;
+  if (activity.message.startsWith('Sold ')) return 'sale';
+  if (activity.message.startsWith('Gave ')) return 'free';
+  if (activity.message.startsWith('Marked ')) return 'broken';
+  return '';
+}
+
+function activityQuantity(activity) {
+  if (Number.isInteger(activity.qty)) return activity.qty;
+  const match = activity.message.match(/^(?:Sold|Gave|Marked) (\d+)/);
+  return match ? Number(match[1]) : 0;
+}
+
+function renderPrivateSummary() {
+  if (!$('privateReport')) return;
+  const count = kind => state.activities.filter(activity => activityKind(activity) === kind).reduce((sum, activity) => sum + activityQuantity(activity), 0);
+  $('soldTotal').textContent = count('sale');
+  $('freeTotal').textContent = count('free');
+  $('brokenTotal').textContent = count('broken');
+  $('salesMoney').textContent = money(state.sales.reduce((sum, sale) => sum + sale.price * sale.qty, 0));
+}
+
+function unlockMoney() {
+  if (!state.settings.adultPin) {
+    const firstPin = prompt('Create a four-digit PIN for the grown-up summary.');
+    if (!/^\d{4}$/.test(firstPin || '')) return alert('Please choose exactly four numbers.');
+    const confirmPin = prompt('Enter the PIN one more time.');
+    if (confirmPin !== firstPin) return alert('The PINs did not match. Try again.');
+    state.settings.adultPin = firstPin;
+    save();
+  } else if (prompt('Enter the grown-up PIN.') !== state.settings.adultPin) {
+    return alert('That PIN is not correct.');
+  }
+  $('privateReport').hidden = false;
+  $('unlockMoney').hidden = true;
+  renderPrivateSummary();
+}
+
 function setupSimpleInventory() {
   const costGrid = $('grams').closest('.two');
   costGrid.previousElementSibling?.remove();
@@ -189,10 +228,11 @@ function setupSimpleInventory() {
   $('profitTarget').closest('label').remove();
   $('suggestion').remove();
   $('askingPrice').parentElement.firstChild.nodeValue = 'Price for one toy ';
-  document.querySelector('[data-view="money"]').remove();
   document.querySelector('[data-view="parent"]').remove();
-  $('money').remove();
   $('parent').remove();
+  document.querySelector('[data-view="money"]').textContent = 'Grown-ups only';
+  $('money').innerHTML = `<div class="card parent"><h2>Grown-up money summary</h2><p class="hint">This is for a parent or trusted grown-up.</p><button id="unlockMoney" class="primary">Unlock summary</button><div id="privateReport" hidden><div class="grid" style="margin-top:14px"><div class="stat mint"><span>Toys sold</span><strong id="soldTotal">0</strong></div><div class="stat gold"><span>Given free</span><strong id="freeTotal">0</strong></div><div class="stat"><span>Broken</span><strong id="brokenTotal">0</strong></div></div><p style="margin-bottom:0">Money from sales: <b id="salesMoney">$0.00</b></p></div></div>`;
+  $('unlockMoney').onclick = unlockMoney;
   const saleForm = $('saleForm');
   saleForm.querySelector('label').insertAdjacentHTML('afterend', `<label>What happened?<select id="recordType"><option value="sale">I sold it</option><option value="free">I gave it away for free</option><option value="broken">It broke</option></select></label>`);
   $('recordType').addEventListener('change', updateSaleForm);
