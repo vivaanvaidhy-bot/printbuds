@@ -1,5 +1,7 @@
 window.MiniMakerAdmin = (() => {
   const STORAGE_KEY = 'mini-maker-shop-v3';
+  const SESSION_KEY = 'mini-maker-shop-admin-unlocked-until';
+  const SESSION_MINUTES = 30;
   const defaults = {
     products: [],
     records: [],
@@ -43,7 +45,15 @@ window.MiniMakerAdmin = (() => {
     state = loadStateFromStorage();
     return state;
   }
+  function sessionUnlocked() {
+    const unlockedUntil = Number(sessionStorage.getItem(SESSION_KEY) || '0');
+    return Number.isFinite(unlockedUntil) && unlockedUntil > Date.now();
+  }
+  function unlockSession() {
+    sessionStorage.setItem(SESSION_KEY, String(Date.now() + SESSION_MINUTES * 60 * 1000));
+  }
   function requireAccess() {
+    if (sessionUnlocked()) return;
     let current = readState();
     if (!current.settings.adultPin) {
       const firstPin = prompt('Create one four-digit PIN for kids and parents to manage the shop.');
@@ -58,9 +68,12 @@ window.MiniMakerAdmin = (() => {
       }
       current.settings.adultPin = firstPin;
       updateState(current);
+      unlockSession();
     } else if (prompt('Enter the shop PIN.') !== current.settings.adultPin) {
       document.body.innerHTML = '<main style="max-width:520px;margin:40px auto;padding:0 16px"><div style="background:#fff;border:1px solid #e4e3ee;border-radius:19px;padding:24px"><h1 style="margin-top:0">Dashboard locked</h1><p>Ask a parent or shop helper for the 4-digit PIN, then open the dashboard again.</p><p><a href="./index.html">Go to customer order page</a></p></div></main>';
       throw new Error('Wrong PIN');
+    } else {
+      unlockSession();
     }
   }
   async function supabaseRequest(path, options = {}) {
