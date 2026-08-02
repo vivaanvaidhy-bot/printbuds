@@ -22,6 +22,7 @@
   <script src="supabase-config.js"></script>
   <script src="assets/js/models/defaults.js"></script>
   <script src="assets/js/models/mappers.js"></script>
+  <script src="assets/js/lib/images.js"></script>
   <script src="assets/js/lib/storage.js"></script>
   <script src="assets/js/api/client.js"></script>
   <script src="assets/js/api/index.js"></script>
@@ -30,7 +31,7 @@
     MiniMakerAdmin.requireAccess();
     const { $, readState, loadSharedData, createColor, updateColor, deleteColor, esc } = MiniMakerAdmin;
     let photo = '';
-    function loadPhoto(file){ if(!file) return; const r = new FileReader(); r.onload = () => photo = r.result; r.readAsDataURL(file); }
+    async function loadPhoto(file){ if(!file) return; photo = await MiniMakerImages.fileToDataUrl(file, { maxWidth: 640, maxHeight: 640, quality: 0.68 }); }
     $('colorPhotoCamera').onchange = e => loadPhoto(e.target.files?.[0]);
     $('colorPhotoGallery').onchange = e => loadPhoto(e.target.files?.[0]);
     async function render(){
