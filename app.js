@@ -17,11 +17,12 @@ const money = value => new Intl.NumberFormat('en-US', { style: 'currency', curre
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const today = () => new Date().toISOString().slice(0, 10);
 const samplePhoto = (title, hueA, hueB, emoji) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${hueA}"/><stop offset="1" stop-color="${hueB}"/></linearGradient></defs><rect width="512" height="512" rx="48" fill="url(#g)"/><circle cx="256" cy="200" r="120" fill="rgba(255,255,255,0.18)"/><text x="256" y="245" text-anchor="middle" font-size="132">${emoji}</text><text x="256" y="390" text-anchor="middle" font-size="38" font-family="Arial, sans-serif" fill="#ffffff" font-weight="700">${title}</text></svg>`)}`;
+const sampleColorPhoto = (label, hue) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><rect width="240" height="240" rx="30" fill="${hue}"/><circle cx="120" cy="105" r="58" fill="rgba(255,255,255,0.22)"/><text x="120" y="205" text-anchor="middle" font-size="26" font-family="Arial, sans-serif" fill="#ffffff" font-weight="700">${label}</text></svg>`)}`;
 const sampleProducts = [
-  { id: crypto.randomUUID(), name: 'Dragon', qty: 6, price: 5, photo: samplePhoto('Dragon', '#ff8a65', '#ff5252', '🐉'), variants: [{ color: 'Red', hex: '#ff4d4d', price: 5 }, { color: 'Blue', hex: '#4d79ff', price: 6 }, { color: 'Glow', hex: '#c7ff6b', price: 7 }] },
-  { id: crypto.randomUUID(), name: 'Robot', qty: 4, price: 6, photo: samplePhoto('Robot', '#64b5f6', '#5c6bc0', '🤖'), variants: [{ color: 'Silver', hex: '#cfd8dc', price: 6 }, { color: 'Gold', hex: '#ffd54f', price: 7 }] },
-  { id: crypto.randomUUID(), name: 'Dinosaur', qty: 5, price: 5, photo: samplePhoto('Dinosaur', '#81c784', '#43a047', '🦖'), variants: [{ color: 'Green', hex: '#66bb6a', price: 5 }, { color: 'Purple', hex: '#ab47bc', price: 6 }] },
-  { id: crypto.randomUUID(), name: 'Rocket', qty: 3, price: 8, photo: samplePhoto('Rocket', '#90caf9', '#ef5350', '🚀'), variants: [{ color: 'White', hex: '#f5f5f5', price: 8 }, { color: 'Black', hex: '#424242', price: 9 }] }
+  { id: crypto.randomUUID(), name: 'Dragon', qty: 6, price: 5, photo: samplePhoto('Dragon', '#ff8a65', '#ff5252', '🐉'), variants: [{ color: 'Red', photo: sampleColorPhoto('Red', '#ff4d4d'), price: 5 }, { color: 'Blue', photo: sampleColorPhoto('Blue', '#4d79ff'), price: 6 }, { color: 'Glow', photo: sampleColorPhoto('Glow', '#c7ff6b'), price: 7 }] },
+  { id: crypto.randomUUID(), name: 'Robot', qty: 4, price: 6, photo: samplePhoto('Robot', '#64b5f6', '#5c6bc0', '🤖'), variants: [{ color: 'Silver', photo: sampleColorPhoto('Silver', '#cfd8dc'), price: 6 }, { color: 'Gold', photo: sampleColorPhoto('Gold', '#ffd54f'), price: 7 }] },
+  { id: crypto.randomUUID(), name: 'Dinosaur', qty: 5, price: 5, photo: samplePhoto('Dinosaur', '#81c784', '#43a047', '🦖'), variants: [{ color: 'Green', photo: sampleColorPhoto('Green', '#66bb6a'), price: 5 }, { color: 'Purple', photo: sampleColorPhoto('Purple', '#ab47bc'), price: 6 }] },
+  { id: crypto.randomUUID(), name: 'Rocket', qty: 3, price: 8, photo: samplePhoto('Rocket', '#90caf9', '#ef5350', '🚀'), variants: [{ color: 'White', photo: sampleColorPhoto('White', '#f5f5f5'), price: 8 }, { color: 'Black', photo: sampleColorPhoto('Black', '#424242'), price: 9 }] }
 ];
 
 function readState() {
@@ -47,6 +48,7 @@ let photoData = '';
 let orderProduct = null;
 let accessUnlocked = false;
 let draftVariants = [];
+let draftColorPhoto = '';
 
 const save = () => localStorage.setItem(key, JSON.stringify(state));
 
@@ -58,14 +60,11 @@ function show(id, message, type = '') {
 }
 
 function switchView(id) {
-  const lockedViews = ['today', 'count', 'make', 'sell', 'money'];
-  if (lockedViews.includes(id) && !accessUnlocked && !requestAccess()) {
-    return;
-  }
-  document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === id));
-  document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === id));
+  const target = $(id);
+  if (!target) return;
+  if (id === 'money' && !accessUnlocked && !requestAccess()) return;
   if (id === 'money' && $('privateReport')) $('privateReport').hidden = false;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function addActivity(message) {
@@ -75,7 +74,10 @@ function addActivity(message) {
 }
 
 function productFromRow(row) {
-  const variants = Array.isArray(row.variants) ? row.variants : [];
+  const variants = Array.isArray(row.variants) ? row.variants.map(variant => ({
+    ...variant,
+    photo: variant.photo || variant.hex ? variant.photo || sampleColorPhoto(variant.color || 'Color', variant.hex || '#dff8ee') : ''
+  })) : [];
   return { id: row.id, name: row.name, qty: Number(row.qty), price: Number(row.price), photo: row.photo || '', variants: variants.length ? variants : [{ color: 'Standard', price: Number(row.price) }] };
 }
 
@@ -106,6 +108,21 @@ function orderFromRow(row) {
     status: row.status,
     createdAt: row.created_at
   };
+}
+
+function orderStatusLabel(status) {
+  return ({
+    pending: 'Pending print',
+    pending_print: 'Pending print',
+    ready_for_pickup: 'Ready for pickup',
+    fulfilled: 'Completed',
+    completed: 'Completed',
+    cancelled: 'Cancelled'
+  })[status] || status;
+}
+
+function isOpenOrder(status) {
+  return ['pending', 'pending_print', 'ready_for_pickup'].includes(status);
 }
 
 async function supabaseRequest(path, options = {}) {
@@ -207,7 +224,7 @@ async function requestOrders(options = {}) {
         customer_name: input.customer,
         contact: input.contact,
         note: input.note || '',
-        status: input.status || 'pending'
+        status: input.status || 'pending_print'
       };
       const rows = await supabaseRequest('customer_orders?select=id,product_id,product_name,qty,color,customer_name,contact,note,status,created_at,updated_at', { method: 'POST', body: payload, prefer: 'return=representation' });
       return orderFromRow(rows[0]);
@@ -221,7 +238,7 @@ async function requestOrders(options = {}) {
   }
   if (method === 'GET') return structuredClone(state.orders);
   const input = JSON.parse(options.body || '{}');
-  if (method === 'POST') return { ...input, id: input.id || crypto.randomUUID(), status: 'pending', createdAt: new Date().toISOString() };
+  if (method === 'POST') return { ...input, id: input.id || crypto.randomUUID(), status: 'pending_print', createdAt: new Date().toISOString() };
   const order = state.orders.find(item => item.id === input.id);
   return order ? { ...order, status: input.status } : null;
 }
@@ -294,11 +311,11 @@ function reportInsights() {
 }
 
 function normalizeVariants(fallbackPrice) {
-  return draftVariants.length ? structuredClone(draftVariants) : [{ color: 'Standard', hex: '#dff8ee', price: Number(fallbackPrice) || 0 }];
+  return draftVariants.length ? structuredClone(draftVariants) : [{ color: 'Standard', photo: '', price: Number(fallbackPrice) || 0 }];
 }
 
 function colorOptions(product) {
-  return (product?.variants?.length ? product.variants : [{ color: 'Standard', hex: '#dff8ee', price: Number(product?.price || 0) }]);
+  return (product?.variants?.length ? product.variants : [{ color: 'Standard', photo: '', price: Number(product?.price || 0) }]);
 }
 
 function findVariant(product, color) {
@@ -312,16 +329,23 @@ function fillColorSelect(selectId, product, selectedColor = '') {
   select.value = selectedColor && variants.some(variant => variant.color === selectedColor) ? selectedColor : variants[0].color;
 }
 
+function renderOrderColorPreview() {
+  if (!orderProduct || !$('orderColorPreview')) return;
+  const variant = findVariant(orderProduct, $('orderColor').value);
+  const thumbnail = variant?.photo ? `<img src="${variant.photo}" alt="${esc(variant.color)}" style="width:32px;height:32px;border-radius:999px;object-fit:cover;vertical-align:middle;margin-right:8px">` : '';
+  $('orderColorPreview').innerHTML = variant ? `${thumbnail}<span class="badge" style="display:inline-flex;align-items:center">${esc(variant.color)} · ${money(variant.price)} each</span>` : '';
+}
+
 function colorChip(variant) {
-  const swatch = variant.hex ? ` style="background:${esc(variant.hex)};color:#111;border:1px solid #c8c6da"` : '';
-  return `<span class="badge"${swatch}>${esc(variant.color)} ${money(variant.price)}</span>`;
+  const thumbnail = variant.photo ? `<img src="${variant.photo}" alt="${esc(variant.color)}" style="width:18px;height:18px;border-radius:999px;object-fit:cover;vertical-align:middle;margin-right:6px">` : '';
+  return `<span class="badge" style="display:inline-flex;align-items:center">${thumbnail}${esc(variant.color)} ${money(variant.price)}</span>`;
 }
 
 function renderDraftVariants() {
   const container = $('colorList');
   if (!container) return;
   container.innerHTML = draftVariants.length
-    ? draftVariants.map((variant, index) => `<span class="badge" style="display:inline-flex;align-items:center;gap:6px;margin:4px;background:${esc(variant.hex || '#dff8ee')};color:#111;border:1px solid #c8c6da">${esc(variant.color)} ${money(variant.price)} <button type="button" data-remove-color="${index}" style="padding:2px 6px;border-radius:999px">x</button></span>`).join('')
+    ? draftVariants.map((variant, index) => `<span class="badge" style="display:inline-flex;align-items:center;gap:6px;margin:4px"><img src="${variant.photo || ''}" alt="${esc(variant.color)}" style="width:18px;height:18px;border-radius:999px;object-fit:cover;background:#eee">${esc(variant.color)} ${money(variant.price)} <button type="button" data-remove-color="${index}" style="padding:2px 6px;border-radius:999px">x</button></span>`).join('')
     : '<p class="hint">No colors added yet. Add at least one color.</p>';
   document.querySelectorAll('[data-remove-color]').forEach(button => {
     button.onclick = () => {
@@ -333,8 +357,9 @@ function renderDraftVariants() {
 
 function resetDraftVariants() {
   draftVariants = [];
+  draftColorPhoto = '';
   $('colorName').value = '';
-  $('colorHex').value = '#4d79ff';
+  if ($('colorPhoto')) $('colorPhoto').value = '';
   $('colorPrice').value = '5.00';
   renderDraftVariants();
 }
@@ -365,7 +390,7 @@ function renderToday() {
   $('checklist').innerHTML = state.products.length
     ? state.products.map(product => `<li><span class="check">${product.qty}</span>${esc(product.name)}</li>`).join('')
     : '<li>Add your first toy to start inventory.</li>';
-  $('badges').innerHTML = `<div class="stat mint"><span>Toys in inventory</span><strong>${state.products.length}</strong></div><div class="stat gold"><span>Pending orders</span><strong>${state.orders.filter(order => order.status === 'pending').length}</strong></div><div class="stat"><span>Sold today</span><strong>${state.records.filter(record => record.recordType === 'sale' && record.date === today()).reduce((sum, record) => sum + record.qty, 0)}</strong></div>`;
+  $('badges').innerHTML = `<div class="stat mint"><span>Toys in inventory</span><strong>${state.products.length}</strong></div><div class="stat gold"><span>Open orders</span><strong>${state.orders.filter(order => isOpenOrder(order.status)).length}</strong></div><div class="stat"><span>Sold today</span><strong>${state.records.filter(record => record.recordType === 'sale' && record.date === today()).reduce((sum, record) => sum + record.qty, 0)}</strong></div>`;
   $('lowStock').innerHTML = lowStock.length
     ? lowStock.map(product => `<p><span class="badge low">Only ${product.qty} left</span> <b>${esc(product.name)}</b></p>`).join('')
     : '<p class="hint">Nothing is low right now.</p>';
@@ -373,8 +398,9 @@ function renderToday() {
 
 function renderCount() {
   $('countList').innerHTML = state.orders.length
-    ? state.orders.map(order => `<div class="activity"><b>${esc(order.color)} ${esc(order.name)} x ${order.qty}</b> for ${esc(order.customer)}<br><span class="small">${esc(order.contact)}${order.note ? ` · ${esc(order.note)}` : ''}</span><br><span class="badge ${order.status === 'pending' ? '' : 'low'}">${esc(order.status)}</span>${order.status === 'pending' ? ` <button data-fulfill="${order.id}">Fulfill as sale</button>` : ''}</div>`).join('')
+    ? state.orders.map(order => `<div class="activity"><b>${esc(order.color)} ${esc(order.name)} x ${order.qty}</b> for ${esc(order.customer)}<br><span class="small">${esc(order.contact)}${order.note ? ` · ${esc(order.note)}` : ''}</span><br><span class="badge ${order.status === 'ready_for_pickup' ? 'low' : ''}">${esc(orderStatusLabel(order.status))}</span>${['pending', 'pending_print'].includes(order.status) ? ` <button data-ready="${order.id}">Mark ready</button>` : ''}${order.status === 'ready_for_pickup' ? ` <button data-fulfill="${order.id}">Complete sale</button>` : ''}</div>`).join('')
     : '<p class="empty">No customer orders yet.</p>';
+  document.querySelectorAll('[data-ready]').forEach(button => button.onclick = () => updateOrderStatus(button.dataset.ready, 'ready_for_pickup'));
   document.querySelectorAll('[data-fulfill]').forEach(button => button.onclick = () => fulfillOrder(button.dataset.fulfill));
 }
 
@@ -383,12 +409,16 @@ function renderInventory() {
   $('sellToy').innerHTML = products.filter(product => product.qty > 0).map(product => `<option value="${product.id}">${esc(product.name)} - ${product.qty} ready</option>`).join('') || '<option value="">No toys ready yet</option>';
   $('sellPicker').innerHTML = products.filter(product => product.qty > 0).map(product => `<button type="button" class="shop-card" data-sell-pick="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge ${product.qty <= state.settings.lowStockLimit ? 'low' : ''}">${product.qty} ready</span></button>`).join('') || '<p class="empty">No toys ready yet.</p>';
   $('inventory').innerHTML = products.length
-    ? products.map(product => `<div class="product"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3><p><span class="badge ${product.qty <= state.settings.lowStockLimit ? 'low' : ''}">${product.qty} ready</span></p><p>Colors: ${colorOptions(product).map(colorChip).join(' ')}</p><p class="small">Tap this toy in Sales when you want to record one.</p>${product.photo ? '' : `<label class="small">Add a photo later<input data-photo-for="${product.id}" type="file" accept="image/*"></label>`}</div></div>`).join('')
+    ? products.map(product => `<div class="product"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><div><h3>${esc(product.name)}</h3><p><span class="badge ${product.qty <= state.settings.lowStockLimit ? 'low' : ''}">${product.qty} ready now</span></p><p>Colors: ${colorOptions(product).map(colorChip).join(' ')}</p><div class="two" style="margin-top:10px"><label class="small">Add ready stock<input data-stock-input="${product.id}" type="number" min="1" value="1"></label><button type="button" data-add-stock="${product.id}">+ Add stock</button></div><div style="margin-top:8px">${product.photo ? '' : '<p class="small">No toy photo yet.</p>'}<label class="small">${product.photo ? 'Change toy photo' : 'Add toy photo'}<input data-photo-for="${product.id}" type="file" accept="image/*"></label></div></div></div>`).join('')
     : '<p class="empty">Add your first toy above.</p>';
-  $('customerShop').innerHTML = products.filter(product => product.qty > 0).map(product => `<button class="shop-card" data-order="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge">From ${money(Math.min(...colorOptions(product).map(variant => variant.price)))}</span><br><span class="small">${product.qty} available · Choose color inside</span></button>`).join('') || '<p class="empty">New toys will appear here.</p>';
+  $('customerShop').innerHTML = products.map(product => `<button class="shop-card" data-order="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge">From ${money(Math.min(...colorOptions(product).map(variant => variant.price)))}</span><br><span class="small">${product.qty} ready now · any listed color can be ordered</span><div style="margin-top:8px">${colorOptions(product).map(colorChip).join(' ')}</div></button>`).join('') || '<p class="empty">New toys will appear here.</p>';
   document.querySelectorAll('[data-order]').forEach(button => button.onclick = () => openOrder(button.dataset.order));
   document.querySelectorAll('[data-sell-pick]').forEach(button => button.onclick = () => selectSaleToy(button.dataset.sellPick));
   document.querySelectorAll('[data-photo-for]').forEach(input => input.onchange = event => uploadInventoryPhoto(input.dataset.photoFor, event.target.files[0]));
+  document.querySelectorAll('[data-add-stock]').forEach(button => button.onclick = () => {
+    const input = document.querySelector(`[data-stock-input="${button.dataset.addStock}"]`);
+    addInventoryStock(button.dataset.addStock, input?.value);
+  });
   if (products.length) updateSaleChoices();
 }
 
@@ -397,7 +427,7 @@ function renderActivity() {
     ? state.activities.map(activity => `<div class="activity"><b>${esc(activity.message)}</b><br><span class="small">${esc(activity.at)}</span></div>`).join('')
     : '<p class="empty">Recent updates will show here.</p>';
   $('orders').innerHTML = state.orders.length
-    ? state.orders.map(order => `<div class="activity"><b>${esc(order.color)} ${esc(order.name)} x ${order.qty}</b> for ${esc(order.customer)}<br><span class="small">${esc(order.contact)}${order.note ? ` · ${esc(order.note)}` : ''}</span></div>`).join('')
+    ? state.orders.map(order => `<div class="activity"><b>${esc(order.color)} ${esc(order.name)} x ${order.qty}</b> for ${esc(order.customer)}<br><span class="small">${esc(order.contact)}${order.note ? ` · ${esc(order.note)}` : ''}</span><br><span class="badge ${order.status === 'ready_for_pickup' ? 'low' : ''}">${esc(orderStatusLabel(order.status))}</span></div>`).join('')
     : '<p class="empty">No customer orders yet.</p>';
 }
 
@@ -407,8 +437,8 @@ function renderPrivateSummary() {
   $('soldTotal').textContent = recordTotal('sale');
   $('freeTotal').textContent = recordTotal('free');
   $('brokenTotal').textContent = recordTotal('broken');
-  $('pendingOrders').textContent = state.orders.filter(order => order.status === 'pending').length;
-  $('fulfilledOrders').textContent = state.orders.filter(order => order.status === 'fulfilled').length;
+  $('pendingOrders').textContent = state.orders.filter(order => ['pending', 'pending_print'].includes(order.status)).length;
+  $('fulfilledOrders').textContent = state.orders.filter(order => order.status === 'completed' || order.status === 'fulfilled').length;
   $('salesMoney').textContent = money(salesMoney());
   $('mostOrdered').textContent = insights.mostOrdered;
   $('mostExpensive').textContent = insights.mostExpensive;
@@ -472,8 +502,11 @@ function openOrder(id) {
   if (!orderProduct) return;
   $('orderTitle').textContent = `Order ${orderProduct.name}`;
   $('orderPhoto').src = orderProduct.photo || '';
-  $('orderQty').max = orderProduct.qty;
+  $('orderQty').value = '1';
+  $('orderQty').removeAttribute('max');
+  $('orderInventoryHint').textContent = `${orderProduct.qty} ready now. Customers can still request any listed color, and you can print more if needed.`;
   fillColorSelect('orderColor', orderProduct);
+  renderOrderColorPreview();
   $('orderDialog').showModal();
 }
 
@@ -515,6 +548,21 @@ async function uploadInventoryPhoto(id, file) {
   }
 }
 
+async function addInventoryStock(id, amount) {
+  const product = state.products.find(item => item.id === id);
+  const qtyToAdd = Number(amount);
+  if (!product || !Number.isFinite(qtyToAdd) || qtyToAdd <= 0) return alert('Enter how many ready toys you want to add.');
+  try {
+    const updated = await requestInventory({ method: 'PATCH', body: JSON.stringify({ id, qty: product.qty + qtyToAdd }) });
+    Object.assign(product, updated);
+    addActivity(`Added ${qtyToAdd} more ${product.name}.`);
+    save();
+    render();
+  } catch (error) {
+    alert(error.message || 'Could not add stock.');
+  }
+}
+
 async function createRecordAndReduce(product, qty, recordType, buyer, price) {
   const updated = await requestInventory({ method: 'PATCH', body: JSON.stringify({ id: product.id, qty: product.qty - qty }) });
   Object.assign(product, updated);
@@ -550,9 +598,23 @@ async function fulfillOrder(id) {
   try {
     const variant = findVariant(product, order.color);
     await createRecordAndReduce(product, order.qty, 'sale', { name: order.customer, color: order.color }, variant.price);
-    const updatedOrder = await requestOrders({ method: 'PATCH', body: JSON.stringify({ id: order.id, status: 'fulfilled' }) });
+    const updatedOrder = await requestOrders({ method: 'PATCH', body: JSON.stringify({ id: order.id, status: 'completed' }) });
     Object.assign(order, updatedOrder);
     addActivity(`Fulfilled ${order.customer}'s order for ${product.name}.`);
+    save();
+    render();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function updateOrderStatus(id, status) {
+  const order = state.orders.find(item => item.id === id);
+  if (!order) return;
+  try {
+    const updatedOrder = await requestOrders({ method: 'PATCH', body: JSON.stringify({ id: order.id, status }) });
+    Object.assign(order, updatedOrder);
+    if (status === 'ready_for_pickup') addActivity(`${order.name} for ${order.customer} is ready for pickup.`);
     save();
     render();
   } catch (error) {
@@ -675,10 +737,10 @@ function setupSimpleInventory() {
   $('today').querySelector('.big-action').textContent = 'Open sales tools';
   $('today').querySelector('.big-action').dataset.go = 'sell';
   $('count').querySelector('h2').textContent = 'Customer orders';
-  $('count').querySelector('.hint').textContent = 'Families can place orders here. Mark an order fulfilled when you hand over the toy.';
+  $('count').querySelector('.hint').textContent = 'Families can request any listed color here. Mark orders as pending print, ready for pickup, then completed when handed over.';
   $('saveCount').remove();
   $('countStatus').remove();
-  $('money').innerHTML = `<div class="card parent"><h2>Admin report</h2><p class="hint">Use the same shop PIN to open inventory tools and this report.</p><div id="privateReport"><div class="grid" style="margin-top:14px"><div class="stat mint"><span>Toys sold</span><strong id="soldTotal">0</strong></div><div class="stat gold"><span>Given free</span><strong id="freeTotal">0</strong></div><div class="stat"><span>Broken</span><strong id="brokenTotal">0</strong></div><div class="stat mint"><span>Pending orders</span><strong id="pendingOrders">0</strong></div><div class="stat gold"><span>Fulfilled orders</span><strong id="fulfilledOrders">0</strong></div></div><p style="margin-bottom:0">Money from sales: <b id="salesMoney">$0.00</b></p><div class="card" style="margin-top:14px"><h3>Shop insights</h3><p><b>Most ordered:</b> <span id="mostOrdered">No orders yet.</span></p><p><b>Most expensive:</b> <span id="mostExpensive">No products yet.</span></p><p><b>Inventory age:</b> <span id="inventoryAge">No inventory yet.</span></p><p><b>Average sale price per month:</b> <span id="avgMonthlySalePrice">$0.00</span></p></div></div></div>`;
+  $('money').innerHTML = `<div class="card parent"><h2>Admin report</h2><p class="hint">Use the same shop PIN to open inventory tools and this report.</p><div id="privateReport"><div class="grid" style="margin-top:14px"><div class="stat mint"><span>Toys sold</span><strong id="soldTotal">0</strong></div><div class="stat gold"><span>Given free</span><strong id="freeTotal">0</strong></div><div class="stat"><span>Broken</span><strong id="brokenTotal">0</strong></div><div class="stat mint"><span>Pending print</span><strong id="pendingOrders">0</strong></div><div class="stat gold"><span>Completed orders</span><strong id="fulfilledOrders">0</strong></div></div><p style="margin-bottom:0">Money from sales: <b id="salesMoney">$0.00</b></p><div class="card" style="margin-top:14px"><h3>Shop insights</h3><p><b>Most ordered:</b> <span id="mostOrdered">No orders yet.</span></p><p><b>Most expensive:</b> <span id="mostExpensive">No products yet.</span></p><p><b>Inventory age:</b> <span id="inventoryAge">No inventory yet.</span></p><p><b>Average sale price per month:</b> <span id="avgMonthlySalePrice">$0.00</span></p></div></div></div>`;
   const saleForm = $('saleForm');
   saleForm.querySelector('h2').textContent = 'Update inventory after a sale or event';
   saleForm.querySelector('p').textContent = 'Use this when kids sell at events, give a toy away, break one, or finish a customer order.';
@@ -757,11 +819,11 @@ $('downloadBackup').onclick = () => {
 $('orderForm').addEventListener('submit', async event => {
   event.preventDefault();
   const qty = +$('orderQty').value;
-  if (!orderProduct || qty > orderProduct.qty) return alert(`Only ${orderProduct?.qty || 0} available.`);
+  if (!orderProduct || qty <= 0) return alert('Please choose a toy and quantity first.');
   try {
     const created = await requestOrders({ method: 'POST', body: JSON.stringify({ productId: orderProduct.id, name: orderProduct.name, qty, color: $('orderColor').value, customer: $('orderName').value.trim(), contact: $('orderContact').value.trim(), note: $('orderNote').value.trim() }) });
     state.orders.unshift(created);
-    addActivity(`New order from ${created.customer} for ${created.qty} ${created.name}.`);
+    addActivity(`New order from ${created.customer} for ${created.qty} ${created.color} ${created.name}.`);
     $('orderDialog').close();
     event.target.reset();
     save();
@@ -772,15 +834,16 @@ $('orderForm').addEventListener('submit', async event => {
 });
 
 $('closeOrder').onclick = () => $('orderDialog').close();
+$('orderColor').addEventListener('change', renderOrderColorPreview);
 $('addColorOption').onclick = () => {
   const color = $('colorName').value.trim();
-  const hex = $('colorHex').value.trim();
   const price = Number($('colorPrice').value);
   if (!color) return show('addStatus', 'Add a color name first.', 'error');
   if (!Number.isFinite(price) || price <= 0) return show('addStatus', 'Add a valid color price.', 'error');
-  draftVariants.push({ color, hex, price });
+  draftVariants.push({ color, photo: draftColorPhoto, price });
   $('colorName').value = '';
-  $('colorHex').value = '#4d79ff';
+  draftColorPhoto = '';
+  $('colorPhoto').value = '';
   $('colorPrice').value = String(price.toFixed(2));
   renderDraftVariants();
   show('addStatus', `${color} added to the color list.`, 'success');
@@ -799,8 +862,32 @@ setupPhotoPicker();
 setupSimpleInventory();
 setNewToyDefaults();
 ensureSampleCatalogForTesting();
+if (location.pathname.toLowerCase().endsWith('/dashboard.html') || location.pathname.toLowerCase().endsWith('\\dashboard.html')) {
+  if (!requestAccess()) {
+    document.body.innerHTML = '<main style="max-width:520px;margin:40px auto;padding:0 16px"><div style="background:#fff;border:1px solid #e4e3ee;border-radius:19px;padding:24px;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif"><h1 style="margin-top:0">Dashboard locked</h1><p>Ask a parent or shop helper for the 4-digit PIN, then open the dashboard again.</p><p><a href="./index.html">Go to customer order page</a></p></div></main>';
+    throw new Error('Dashboard locked');
+  }
+}
 render();
-switchView('shop');
 loadSharedData();
+
+if ($('colorPhoto')) {
+  $('colorPhoto').addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      draftColorPhoto = '';
+      return;
+    }
+    show('addStatus', 'Getting the filament photo ready...');
+    compressedPhoto(file).then(image => {
+      draftColorPhoto = image;
+      show('addStatus', 'Filament photo ready. Now tap Add color.', 'success');
+    }).catch(() => {
+      draftColorPhoto = '';
+      $('colorPhoto').value = '';
+      show('addStatus', 'That filament photo did not work. Try another one.', 'error');
+    });
+  });
+}
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

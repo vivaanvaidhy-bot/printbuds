@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>3D Designs</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#faf9ff;margin:0}
+    header{padding:20px;background:linear-gradient(135deg,#5b39d5,#814ee7);color:#fff}
+    .wrap{max-width:860px;margin:auto;padding:16px}
+    .card{background:#fff;border:1px solid #e4e3ee;border-radius:18px;padding:16px;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+    .photo{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:#eee}
+    label{display:block;margin-top:10px;font-weight:700}
+    input{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;margin-top:5px}
+    button{margin-top:12px;padding:12px 15px;border:0;border-radius:12px;background:#5b39d5;color:#fff;font-weight:800}
+    .toplink{display:inline-block;color:#fff;background:rgba(255,255,255,.16);padding:10px 14px;border-radius:999px;text-decoration:none;margin-top:10px}
+    .hint{font-size:13px;color:#65657d}
+  </style>
+</head>
+<body>
+  <header><h1>Step 2: Add 3D designs</h1><a class="toplink" href="./dashboard.html">Back to dashboard</a></header>
+  <main class="wrap">
+    <div class="card">
+      <label>Design name<input id="designName" placeholder="Rainbow dragon"></label>
+      <label>Take design photo<input id="designPhotoCamera" type="file" accept="image/*" capture="environment"></label>
+      <label>Or choose from gallery<input id="designPhotoGallery" type="file" accept="image/*"></label>
+      <p class="hint">You can use camera or gallery on mobile/iPad.</p>
+      <button id="saveDesign">Save design</button>
+    </div>
+    <div class="card"><h2>Saved 3D designs</h2><div id="designGrid" class="grid"></div></div>
+  </main>
+  <script src="supabase-config.js"></script>
+  <script src="admin-common.js?v=2"></script>
+  <script>
+    MiniMakerAdmin.requireAccess();
+    const { $, readState, loadSharedData, createDesign, esc } = MiniMakerAdmin;
+    let photo = '';
+    function loadPhoto(file){ if(!file) return; const r = new FileReader(); r.onload = () => photo = r.result; r.readAsDataURL(file); }
+    $('designPhotoCamera').onchange = e => loadPhoto(e.target.files?.[0]);
+    $('designPhotoGallery').onchange = e => loadPhoto(e.target.files?.[0]);
+    async function render(){
+      await loadSharedData();
+      const state = readState();
+      $('designGrid').innerHTML = state.designLibrary.length
+        ? state.designLibrary.map(c => `<div><img class="photo" src="${c.photo}" alt="${esc(c.name)}"><strong>${esc(c.name)}</strong></div>`).join('')
+        : '<p>No designs yet.</p>';
+    }
+    $('saveDesign').onclick = async () => {
+      const name = $('designName').value.trim();
+      if (!name || !photo) return alert('Add design name and photo first.');
+      await createDesign({ name, photo });
+      $('designName').value = '';
+      $('designPhotoCamera').value = '';
+      $('designPhotoGallery').value = '';
+      photo = '';
+      render();
+    };
+    render();
+  </script>
+</body>
+</html>

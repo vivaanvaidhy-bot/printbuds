@@ -33,14 +33,30 @@ create table if not exists public.customer_orders (
   customer_name text not null,
   contact text not null,
   note text not null default '',
-  status text not null default 'pending' check (status in ('pending', 'fulfilled', 'cancelled')),
+  status text not null default 'pending_print' check (status in ('pending', 'pending_print', 'ready_for_pickup', 'fulfilled', 'completed', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.color_library (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  photo text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.design_library (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  photo text not null default '',
+  created_at timestamptz not null default now()
 );
 
 alter table public.inventory_items enable row level security;
 alter table public.sale_events enable row level security;
 alter table public.customer_orders enable row level security;
+alter table public.color_library enable row level security;
+alter table public.design_library enable row level security;
 
 drop policy if exists "inventory public access" on public.inventory_items;
 create policy "inventory public access"
@@ -66,10 +82,28 @@ grant usage on schema public to anon;
 grant select, insert, update, delete on public.inventory_items to anon;
 grant select, insert, update, delete on public.sale_events to anon;
 grant select, insert, update, delete on public.customer_orders to anon;
+grant select, insert, update, delete on public.color_library to anon;
+grant select, insert, update, delete on public.design_library to anon;
 
 drop policy if exists "orders public access" on public.customer_orders;
 create policy "orders public access"
 on public.customer_orders
+for all
+to anon
+using (true)
+with check (true);
+
+drop policy if exists "colors public access" on public.color_library;
+create policy "colors public access"
+on public.color_library
+for all
+to anon
+using (true)
+with check (true);
+
+drop policy if exists "designs public access" on public.design_library;
+create policy "designs public access"
+on public.design_library
 for all
 to anon
 using (true)
