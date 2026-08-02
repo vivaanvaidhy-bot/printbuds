@@ -1,0 +1,4 @@
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.dashboard-card{display:block;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-decoration:none;color:inherit;box-shadow:0 3px 10px rgba(40,32,74,.04)}
+.dashboard-card h2{margin:0 0 8px;font-size:20px}
+.dashboard-badge{display:inline-block;background:var(--mint);padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800;margin-bottom:10px}

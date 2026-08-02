@@ -4,19 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Filament Colors</title>
-  <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#faf9ff;margin:0}
-    header{padding:20px;background:linear-gradient(135deg,#5b39d5,#814ee7);color:#fff}
-    .wrap{max-width:860px;margin:auto;padding:16px}
-    .card{background:#fff;border:1px solid #e4e3ee;border-radius:18px;padding:16px;margin-bottom:14px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-    .photo{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:#eee}
-    label{display:block;margin-top:10px;font-weight:700}
-    input{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;margin-top:5px}
-    button{margin-top:12px;padding:12px 15px;border:0;border-radius:12px;background:#5b39d5;color:#fff;font-weight:800}
-    .toplink{display:inline-block;color:#fff;background:rgba(255,255,255,.16);padding:10px 14px;border-radius:999px;text-decoration:none;margin-top:10px}
-    .hint{font-size:13px;color:#65657d}
-  </style>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
 </head>
 <body>
   <header><h1>Step 1: Add filament colors</h1><a class="toplink" href="./dashboard.html">Back to dashboard</a></header>
@@ -28,13 +17,18 @@
       <p class="hint">You can use camera or gallery on mobile/iPad.</p>
       <button id="saveColor">Save color</button>
     </div>
-    <div class="card"><h2>Saved filament colors</h2><div id="colorGrid" class="grid"></div></div>
+    <div class="card"><h2>Saved filament colors</h2><div id="colorGrid" class="entity-grid"></div></div>
   </main>
   <script src="supabase-config.js"></script>
-  <script src="admin-common.js?v=2"></script>
+  <script src="assets/js/models/defaults.js"></script>
+  <script src="assets/js/models/mappers.js"></script>
+  <script src="assets/js/lib/storage.js"></script>
+  <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/api/index.js"></script>
+  <script src="assets/js/app/admin-common.js"></script>
   <script>
     MiniMakerAdmin.requireAccess();
-    const { $, readState, loadSharedData, createColor, esc } = MiniMakerAdmin;
+    const { $, readState, loadSharedData, createColor, updateColor, deleteColor, esc } = MiniMakerAdmin;
     let photo = '';
     function loadPhoto(file){ if(!file) return; const r = new FileReader(); r.onload = () => photo = r.result; r.readAsDataURL(file); }
     $('colorPhotoCamera').onchange = e => loadPhoto(e.target.files?.[0]);
@@ -43,8 +37,25 @@
       await loadSharedData();
       const state = readState();
       $('colorGrid').innerHTML = state.colorLibrary.length
-        ? state.colorLibrary.map(c => `<div><img class="photo" src="${c.photo}" alt="${esc(c.name)}"><strong>${esc(c.name)}</strong></div>`).join('')
+        ? state.colorLibrary.map(c => `<div class="entity-card"><img class="photo" src="${c.photo}" alt="${esc(c.name)}"><h3>${esc(c.name)}</h3><div class="entity-actions"><button class="inline secondary" data-edit="${c.id}">Edit</button><button class="inline danger" data-delete="${c.id}">Delete</button></div></div>`).join('')
         : '<p>No colors yet.</p>';
+      document.querySelectorAll('[data-edit]').forEach(button => button.onclick = async () => {
+        const color = state.colorLibrary.find(item => item.id === button.dataset.edit);
+        if (!color) return;
+        const name = prompt('Update color name:', color.name);
+        if (!name) return;
+        const useCurrentPhoto = confirm('Keep current photo? Tap Cancel if you want to use the last selected new photo.');
+        await updateColor(color.id, { name: name.trim(), photo: useCurrentPhoto ? color.photo : (photo || color.photo) });
+        photo = '';
+        render();
+      });
+      document.querySelectorAll('[data-delete]').forEach(button => button.onclick = async () => {
+        const color = state.colorLibrary.find(item => item.id === button.dataset.delete);
+        if (!color) return;
+        if (!confirm(`Delete ${color.name}?`)) return;
+        await deleteColor(color.id);
+        render();
+      });
     }
     $('saveColor').onclick = async () => {
       const name = $('colorName').value.trim();
