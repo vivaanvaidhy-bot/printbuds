@@ -12,7 +12,7 @@
 <body>
   <header>
     <h1>BuildBuddy3D</h1>
-    <p>A fun 3D printing hobby by a 9-year-old who loves making cool things and sharing them with friends.</p>
+    <p>I'm a curious 9-year-old who loves turning big ideas into real projects. You'll usually find me asking <strong>"What if...?"</strong> or <strong>"Can I build that?"</strong> because I enjoy figuring things out on my own. 🖨️ Right now, I'm diving into the exciting world of <strong>3D printing</strong>—learning how to design, create, and bring ideas to life. I'm also curious about <strong>business</strong> and want to learn how to turn creative ideas into products that people love. <strong>Built by Curiosity. Powered by Imagination.</strong></p>
     <a class="toplink" href="./dashboard.html">Dashboard for kids & parents</a>
   </header>
 
@@ -29,6 +29,7 @@
       <div class="section-head">
         <h2>Recent order requests</h2>
       </div>
+      <p id="customerStatus" class="status"></p>
       <div id="orders"></div>
     </div>
   </main>
@@ -44,6 +45,7 @@
       <label>Color<select id="orderColor" required></select></label>
       <label>How many would you like?<input id="orderQty" type="number" min="1" value="1" required></label>
       <label>Message (optional)<input id="orderNote" placeholder="Blue, please!"></label>
+      <p id="orderFormStatus" class="status"></p>
       <button class="primary" style="margin-top:14px">Send order request</button>
       <button type="button" id="closeOrder">Cancel</button>
     </form>

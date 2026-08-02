@@ -45,6 +45,7 @@ window.MiniMakerMappers = (() => {
         id: row.id,
         name: row.name,
         photo: row.photo || '',
+        extraPrice: Number(row.extra_price || 0),
         createdAt: row.created_at
       };
     },
@@ -53,6 +54,8 @@ window.MiniMakerMappers = (() => {
         id: row.id,
         name: row.name,
         photo: row.photo || '',
+        sizeCategory: row.size_category || 'small',
+        basePrice: Number(row.base_price || 5),
         createdAt: row.created_at
       };
     }
