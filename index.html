@@ -10,12 +10,45 @@
   <link rel="stylesheet" href="assets/css/customer.css">
 </head>
 <body>
-  <header><h1>🧸 Mini Maker Shop</h1><p>Pick a toy, choose a color, and send your order request.</p><a class="toplink" href="./dashboard.html">Dashboard for kids & parents</a></header>
+  <header>
+    <h1>Mini Maker Shop</h1>
+    <p>Pick a toy, choose a color, and send your order request.</p>
+    <a class="toplink" href="./dashboard.html">Dashboard for kids & parents</a>
+  </header>
+
   <main class="wrap">
-    <div class="card"><h2>Order a 3D toy</h2><p class="hint">Customers can choose any listed color. If it is not ready yet, it can be printed after the order.</p><div id="customerShop" class="customer-grid"></div></div>
-    <div class="card"><h2>Recent order requests</h2><div id="orders"></div></div>
+    <div class="card">
+      <div class="section-head">
+        <h2>Order a 3D toy</h2>
+      </div>
+      <p class="hint section-copy">Customers can choose any listed color. If it is not ready yet, it can be printed after the order.</p>
+      <div id="customerShop" class="customer-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h2>Recent order requests</h2>
+      </div>
+      <div id="orders"></div>
+    </div>
   </main>
-  <dialog id="orderDialog"><form id="orderForm"><h2 id="orderTitle">Order a toy</h2><img id="orderPhoto" class="photo" alt="Toy to order"><p id="orderInventoryHint" class="hint"></p><div id="orderColorPreview" class="status"></div><label>Your name<input id="orderName" required placeholder="Customer name"></label><label>Email or phone<input id="orderContact" required placeholder="name@example.com or 555-1234"></label><label>Color<select id="orderColor" required></select></label><label>How many would you like?<input id="orderQty" type="number" min="1" value="1" required></label><label>Message (optional)<input id="orderNote" placeholder="Blue, please!"></label><button class="primary" style="margin-top:14px">Send order request</button> <button type="button" id="closeOrder">Cancel</button></form></dialog>
+
+  <dialog id="orderDialog">
+    <form id="orderForm">
+      <h2 id="orderTitle">Order a toy</h2>
+      <img id="orderPhoto" class="photo" alt="Toy to order">
+      <p id="orderInventoryHint" class="hint"></p>
+      <div id="orderColorPreview" class="status"></div>
+      <label>Your name<input id="orderName" required placeholder="Customer name"></label>
+      <label>Email or phone<input id="orderContact" required placeholder="name@example.com or 555-1234"></label>
+      <label>Color<select id="orderColor" required></select></label>
+      <label>How many would you like?<input id="orderQty" type="number" min="1" value="1" required></label>
+      <label>Message (optional)<input id="orderNote" placeholder="Blue, please!"></label>
+      <button class="primary" style="margin-top:14px">Send order request</button>
+      <button type="button" id="closeOrder">Cancel</button>
+    </form>
+  </dialog>
+
   <script src="supabase-config.js"></script>
   <script src="assets/js/models/defaults.js"></script>
   <script src="assets/js/models/mappers.js"></script>

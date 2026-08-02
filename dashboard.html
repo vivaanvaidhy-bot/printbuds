@@ -10,10 +10,11 @@
 </head>
 <body>
   <header>
-    <h1>🧸 Mini Maker Shop Dashboard</h1>
+    <h1>Mini Maker Shop Dashboard</h1>
     <p>Use these pages in order so the setup flow stays simple.</p>
     <a class="toplink" href="./index.html">Open customer order page</a>
   </header>
+
   <main class="wrap">
     <div class="dashboard-grid">
       <a class="dashboard-card" href="./colors.html">
@@ -21,21 +22,25 @@
         <h2>Add filament colors</h2>
         <p class="hint">Save the filament photos and color names first.</p>
       </a>
+
       <a class="dashboard-card" href="./designs.html">
         <div class="dashboard-badge">Step 2</div>
         <h2>Add 3D designs</h2>
         <p class="hint">Save the toy designs and their main photos.</p>
       </a>
+
       <a class="dashboard-card" href="./inventory.html">
         <div class="dashboard-badge">Step 3</div>
         <h2>Add printed toys</h2>
         <p class="hint">Pick a design, choose the available colors, enter price, and add ready stock.</p>
       </a>
+
       <a class="dashboard-card" href="./orders_admin.html">
         <div class="dashboard-badge">Step 4</div>
         <h2>Orders and sales</h2>
         <p class="hint">Mark orders ready, complete sales, and update inventory.</p>
       </a>
+
       <a class="dashboard-card" href="./reports.html">
         <div class="dashboard-badge">Step 5</div>
         <h2>Reports</h2>
@@ -43,6 +48,7 @@
       </a>
     </div>
   </main>
+
   <script src="supabase-config.js"></script>
   <script src="assets/js/models/defaults.js"></script>
   <script src="assets/js/models/mappers.js"></script>
@@ -50,6 +56,8 @@
   <script src="assets/js/api/client.js"></script>
   <script src="assets/js/api/index.js"></script>
   <script src="assets/js/app/admin-common.js"></script>
-  <script>MiniMakerAdmin.requireAccess();</script>
+  <script>
+    MiniMakerAdmin.requireAccess();
+  </script>
 </body>
 </html>
