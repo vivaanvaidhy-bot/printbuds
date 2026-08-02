@@ -1,5 +1,5 @@
-const CACHE="mini-maker-shop-v3";
-const ASSETS=["./","./index.html","./app.js","./manifest.webmanifest"];
+const CACHE="mini-maker-shop-v6";
+const ASSETS=["./","./index.html","./dashboard.html","./colors.html","./designs.html","./inventory.html","./orders_admin.html","./reports.html","./app.js","./customer.js","./admin-common.js?v=2","./manifest.webmanifest"];
 self.addEventListener("install",event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener("activate",event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()])));
 self.addEventListener("fetch",event=>{

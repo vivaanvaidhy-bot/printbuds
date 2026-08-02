@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Filament Colors</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#faf9ff;margin:0}
+    header{padding:20px;background:linear-gradient(135deg,#5b39d5,#814ee7);color:#fff}
+    .wrap{max-width:860px;margin:auto;padding:16px}
+    .card{background:#fff;border:1px solid #e4e3ee;border-radius:18px;padding:16px;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+    .photo{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;background:#eee}
+    label{display:block;margin-top:10px;font-weight:700}
+    input{width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;margin-top:5px}
+    button{margin-top:12px;padding:12px 15px;border:0;border-radius:12px;background:#5b39d5;color:#fff;font-weight:800}
+    .toplink{display:inline-block;color:#fff;background:rgba(255,255,255,.16);padding:10px 14px;border-radius:999px;text-decoration:none;margin-top:10px}
+    .hint{font-size:13px;color:#65657d}
+  </style>
+</head>
+<body>
+  <header><h1>Step 1: Add filament colors</h1><a class="toplink" href="./dashboard.html">Back to dashboard</a></header>
+  <main class="wrap">
+    <div class="card">
+      <label>Color name<input id="colorName" placeholder="Blue"></label>
+      <label>Take filament photo<input id="colorPhotoCamera" type="file" accept="image/*" capture="environment"></label>
+      <label>Or choose from gallery<input id="colorPhotoGallery" type="file" accept="image/*"></label>
+      <p class="hint">You can use camera or gallery on mobile/iPad.</p>
+      <button id="saveColor">Save color</button>
+    </div>
+    <div class="card"><h2>Saved filament colors</h2><div id="colorGrid" class="grid"></div></div>
+  </main>
+  <script src="supabase-config.js"></script>
+  <script src="admin-common.js?v=2"></script>
+  <script>
+    MiniMakerAdmin.requireAccess();
+    const { $, readState, loadSharedData, createColor, esc } = MiniMakerAdmin;
+    let photo = '';
+    function loadPhoto(file){ if(!file) return; const r = new FileReader(); r.onload = () => photo = r.result; r.readAsDataURL(file); }
+    $('colorPhotoCamera').onchange = e => loadPhoto(e.target.files?.[0]);
+    $('colorPhotoGallery').onchange = e => loadPhoto(e.target.files?.[0]);
+    async function render(){
+      await loadSharedData();
+      const state = readState();
+      $('colorGrid').innerHTML = state.colorLibrary.length
+        ? state.colorLibrary.map(c => `<div><img class="photo" src="${c.photo}" alt="${esc(c.name)}"><strong>${esc(c.name)}</strong></div>`).join('')
+        : '<p>No colors yet.</p>';
+    }
+    $('saveColor').onclick = async () => {
+      const name = $('colorName').value.trim();
+      if (!name || !photo) return alert('Add color name and photo first.');
+      await createColor({ name, photo });
+      $('colorName').value = '';
+      $('colorPhotoCamera').value = '';
+      $('colorPhotoGallery').value = '';
+      photo = '';
+      render();
+    };
+    render();
+  </script>
+</body>
+</html>
