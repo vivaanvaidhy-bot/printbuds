@@ -5,47 +5,59 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#5b39d5">
   <title>Mini Maker Shop Dashboard</title>
-  <style>
-    :root{--ink:#20213a;--purple:#5b39d5;--lilac:#f0edff;--mint:#dff8ee;--line:#e4e3ee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}*{box-sizing:border-box}body{margin:0;background:#faf9ff}header{padding:24px 18px 16px;background:linear-gradient(135deg,#5b39d5,#814ee7);color:#fff}header h1{margin:0;font-size:28px}header p{margin:6px 0 0;opacity:.92}.wrap{max-width:900px;margin:auto;padding:18px 14px 40px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.card{display:block;background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;text-decoration:none;color:inherit;box-shadow:0 3px 10px #28204a0a}.card h2{margin:0 0 8px;font-size:20px}.hint{font-size:13px;color:#65657d;line-height:1.45}.badge{display:inline-block;background:var(--mint);padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800;margin-bottom:10px}.toplink{display:inline-block;margin-top:10px;color:#fff;background:rgba(255,255,255,.16);padding:10px 14px;border-radius:999px;text-decoration:none}
-  </style>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
 </head>
 <body>
   <header>
-    <h1>🧸 Mini Maker Shop Dashboard</h1>
+    <h1>Mini Maker Shop Dashboard</h1>
     <p>Use these pages in order so the setup flow stays simple.</p>
     <a class="toplink" href="./index.html">Open customer order page</a>
   </header>
+
   <main class="wrap">
-    <div class="grid">
-      <a class="card" href="./colors.html">
-        <div class="badge">Step 1</div>
+    <div class="dashboard-grid">
+      <a class="dashboard-card" href="./colors.html">
+        <div class="dashboard-badge">Step 1</div>
         <h2>Add filament colors</h2>
         <p class="hint">Save the filament photos and color names first.</p>
       </a>
-      <a class="card" href="./designs.html">
-        <div class="badge">Step 2</div>
+
+      <a class="dashboard-card" href="./designs.html">
+        <div class="dashboard-badge">Step 2</div>
         <h2>Add 3D designs</h2>
         <p class="hint">Save the toy designs and their main photos.</p>
       </a>
-      <a class="card" href="./inventory.html">
-        <div class="badge">Step 3</div>
+
+      <a class="dashboard-card" href="./inventory.html">
+        <div class="dashboard-badge">Step 3</div>
         <h2>Add printed toys</h2>
         <p class="hint">Pick a design, choose the available colors, enter price, and add ready stock.</p>
       </a>
-      <a class="card" href="./orders_admin.html">
-        <div class="badge">Step 4</div>
+
+      <a class="dashboard-card" href="./orders_admin.html">
+        <div class="dashboard-badge">Step 4</div>
         <h2>Orders and sales</h2>
         <p class="hint">Mark orders ready, complete sales, and update inventory.</p>
       </a>
-      <a class="card" href="./reports.html">
-        <div class="badge">Step 5</div>
+
+      <a class="dashboard-card" href="./reports.html">
+        <div class="dashboard-badge">Step 5</div>
         <h2>Reports</h2>
         <p class="hint">See sold, broken, free, pending print, and completed order reports.</p>
       </a>
     </div>
   </main>
+
   <script src="supabase-config.js"></script>
-  <script src="admin-common.js?v=2"></script>
-  <script>MiniMakerAdmin.requireAccess();</script>
+  <script src="assets/js/models/defaults.js"></script>
+  <script src="assets/js/models/mappers.js"></script>
+  <script src="assets/js/lib/storage.js"></script>
+  <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/api/index.js"></script>
+  <script src="assets/js/app/admin-common.js"></script>
+  <script>
+    MiniMakerAdmin.requireAccess();
+  </script>
 </body>
 </html>

@@ -6,18 +6,55 @@
   <meta name="theme-color" content="#5b39d5">
   <title>Mini Maker Shop</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <style>
-    :root{--ink:#20213a;--purple:#5b39d5;--mint:#dff8ee;--line:#e4e3ee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}*{box-sizing:border-box}body{margin:0;background:#faf9ff}header{padding:calc(18px + env(safe-area-inset-top)) 18px 16px;background:linear-gradient(135deg,#5b39d5,#814ee7);color:#fff}header h1{font-size:28px;margin:0}header p{margin:6px 0 0;opacity:.92}.wrap{max-width:820px;margin:auto;padding:16px 14px 38px}.card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:16px;margin:0 0 13px;box-shadow:0 3px 10px #28204a0a}h2{font-size:22px;margin:0 0 8px}.hint,.small{font-size:13px;color:#65657d;line-height:1.45}.photo{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:13px;background:#eeedf5}.customer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px}.shop-card{padding:8px;border:1px solid var(--line);border-radius:16px;background:#fff;text-align:left;cursor:pointer}.shop-card .photo{margin-bottom:8px}.badge{display:inline-block;background:var(--mint);padding:3px 7px;border-radius:999px;font-size:12px;font-weight:800}.activity{padding:11px 0;border-bottom:1px solid var(--line)}.activity:last-child{border:0}label{display:block;font-size:14px;font-weight:750;margin-top:11px}input,select{width:100%;font:inherit;margin-top:5px;padding:12px;border-radius:12px;border:1px solid #c8c6da;background:#fff}button{font:inherit;font-weight:800;border:0;border-radius:13px;padding:12px 15px;background:#e8e6f4;color:var(--ink);cursor:pointer}button.primary{background:var(--purple);color:#fff}.empty{text-align:center;padding:25px;color:#65657d}.toplink{display:inline-block;margin-top:10px;color:#fff;background:rgba(255,255,255,.16);padding:10px 14px;border-radius:999px;text-decoration:none}dialog{border:0;border-radius:20px;max-width:390px;width:calc(100% - 28px);box-shadow:0 15px 55px #2225}dialog::backdrop{background:#1f174566}.status{font-size:14px;min-height:20px;margin:9px 0 0}
-  </style>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/customer.css">
 </head>
 <body>
-  <header><h1>🧸 Mini Maker Shop</h1><p>Pick a toy, choose a color, and send your order request.</p><a class="toplink" href="./dashboard.html">Dashboard for kids & parents</a></header>
+  <header>
+    <h1>Mini Maker Shop</h1>
+    <p>Pick a toy, choose a color, and send your order request.</p>
+    <a class="toplink" href="./dashboard.html">Dashboard for kids & parents</a>
+  </header>
+
   <main class="wrap">
-    <div class="card"><h2>Order a 3D toy</h2><p class="hint">Customers can choose any listed color. If it is not ready yet, it can be printed after the order.</p><div id="customerShop" class="customer-grid"></div></div>
-    <div class="card"><h2>Recent order requests</h2><div id="orders"></div></div>
+    <div class="card">
+      <div class="section-head">
+        <h2>Order a 3D toy</h2>
+      </div>
+      <p class="hint section-copy">Customers can choose any listed color. If it is not ready yet, it can be printed after the order.</p>
+      <div id="customerShop" class="customer-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-head">
+        <h2>Recent order requests</h2>
+      </div>
+      <div id="orders"></div>
+    </div>
   </main>
-  <dialog id="orderDialog"><form id="orderForm"><h2 id="orderTitle">Order a toy</h2><img id="orderPhoto" class="photo" alt="Toy to order"><p id="orderInventoryHint" class="hint"></p><div id="orderColorPreview" class="status"></div><label>Your name<input id="orderName" required placeholder="Customer name"></label><label>Email or phone<input id="orderContact" required placeholder="name@example.com or 555-1234"></label><label>Color<select id="orderColor" required></select></label><label>How many would you like?<input id="orderQty" type="number" min="1" value="1" required></label><label>Message (optional)<input id="orderNote" placeholder="Blue, please!"></label><button class="primary" style="margin-top:14px">Send order request</button> <button type="button" id="closeOrder">Cancel</button></form></dialog>
+
+  <dialog id="orderDialog">
+    <form id="orderForm">
+      <h2 id="orderTitle">Order a toy</h2>
+      <img id="orderPhoto" class="photo" alt="Toy to order">
+      <p id="orderInventoryHint" class="hint"></p>
+      <div id="orderColorPreview" class="status"></div>
+      <label>Your name<input id="orderName" required placeholder="Customer name"></label>
+      <label>Email or phone<input id="orderContact" required placeholder="name@example.com or 555-1234"></label>
+      <label>Color<select id="orderColor" required></select></label>
+      <label>How many would you like?<input id="orderQty" type="number" min="1" value="1" required></label>
+      <label>Message (optional)<input id="orderNote" placeholder="Blue, please!"></label>
+      <button class="primary" style="margin-top:14px">Send order request</button>
+      <button type="button" id="closeOrder">Cancel</button>
+    </form>
+  </dialog>
+
   <script src="supabase-config.js"></script>
-  <script src="customer.js"></script>
+  <script src="assets/js/models/defaults.js"></script>
+  <script src="assets/js/models/mappers.js"></script>
+  <script src="assets/js/lib/storage.js"></script>
+  <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/api/index.js"></script>
+  <script src="assets/js/app/customer.js"></script>
 </body>
 </html>
