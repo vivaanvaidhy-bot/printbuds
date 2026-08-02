@@ -35,7 +35,8 @@
       <div id="variantList"></div>
 
       <label>Ready now quantity<input id="qty" type="number" min="1" value="1"></label>
-      <label>Default selling price<input id="price" type="number" min="0.01" step="0.01" value="5.00"></label>
+      <p class="hint">Price is automatic: design base price + color extra price.</p>
+      <p id="priceSummary" class="status"></p>
       <button id="saveToy">Add printed toy to inventory</button>
       <p id="status" class="status"></p>
     </div>
@@ -143,12 +144,11 @@
       const color = state.colorLibrary.find(c => c.id === selectedColorId);
       if (!color) return alert('Pick a color first.');
       if (chosen.some(v => v.color === color.name)) return;
-      chosen.push({ color: color.name, photo: color.photo, price: Number($('price').value) || 5 });
-      renderChosen();
-    };
-
-    $('price').onchange = () => {
-      chosen = chosen.map(v => ({ ...v, price: Number($('price').value) || 5 }));
+      const design = state.designLibrary.find(d => d.id === selectedDesignId);
+      const basePrice = Number(design?.basePrice || 5);
+      const extraPrice = Number(color.extraPrice || 0);
+      chosen.push({ color: color.name, photo: color.photo, price: basePrice + extraPrice });
+      $('priceSummary').textContent = `${design?.name || 'Toy'} base $${basePrice.toFixed(2)} + ${color.name} extra $${extraPrice.toFixed(2)} = $${(basePrice + extraPrice).toFixed(2)}`;
       renderChosen();
     };
 
@@ -158,11 +158,12 @@
       if (!design) return alert('Pick a design first.');
       if (!chosen.length) return alert('Add at least one color.');
       const qty = Number($('qty').value);
-      const price = Number($('price').value);
+      const price = Math.min(...chosen.map(variant => Number(variant.price || design.basePrice || 5)));
       const created = await createInventoryItem({ name: design.name, qty, price, photo: design.photo, variants: chosen });
       $('status').textContent = `Added ${created.name} to inventory.`;
       chosen = [];
       selectedColorId = '';
+      $('priceSummary').textContent = '';
       renderChosen();
       await renderInventory();
     };

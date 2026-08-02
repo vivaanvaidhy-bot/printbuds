@@ -42,6 +42,7 @@ create table if not exists public.color_library (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   photo text not null default '',
+  extra_price numeric(10, 2) not null default 0 check (extra_price >= 0),
   created_at timestamptz not null default now()
 );
 
@@ -49,6 +50,8 @@ create table if not exists public.design_library (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   photo text not null default '',
+  size_category text not null default 'small' check (size_category in ('small', 'medium', 'large')),
+  base_price numeric(10, 2) not null default 5 check (base_price >= 0),
   created_at timestamptz not null default now()
 );
 
@@ -69,6 +72,9 @@ with check (true);
 alter table public.inventory_items add column if not exists variants jsonb not null default '[]'::jsonb;
 alter table public.sale_events add column if not exists color text not null default '';
 alter table public.customer_orders add column if not exists color text not null default '';
+alter table public.color_library add column if not exists extra_price numeric(10, 2) not null default 0;
+alter table public.design_library add column if not exists size_category text not null default 'small';
+alter table public.design_library add column if not exists base_price numeric(10, 2) not null default 5;
 
 drop policy if exists "sales public access" on public.sale_events;
 create policy "sales public access"

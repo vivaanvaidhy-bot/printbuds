@@ -31,6 +31,7 @@ button.danger{background:#d94b67}
 button.inline{margin-top:8px;margin-right:8px;padding:8px 10px;border-radius:10px}
 .badge{display:inline-block;background:#d7f5ec;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:800;color:#184b3d}
 .pick-card{border:2px solid var(--line);border-radius:16px;padding:8px;background:#fff;cursor:pointer;text-align:left}
+.pick-card .photo{width:100%;max-width:150px;aspect-ratio:1/1;display:block;margin:0 auto;border-radius:12px}
 .pick-card.active{border-color:var(--purple);box-shadow:0 0 0 3px var(--lilac)}
 .pick-card strong{display:block;margin-top:8px}
 .selected{margin:8px 0 0;font-weight:700}

@@ -7,13 +7,13 @@ window.MiniMakerApi = (() => {
   const colors = {
     async list() {
       if (hasSharedInventory) {
-        return (await request('color_library?select=id,name,photo,created_at&order=created_at.asc')).map(map.color);
+        return (await request('color_library?select=id,name,photo,extra_price,created_at&order=created_at.asc')).map(map.color);
       }
       return storage.loadState().colorLibrary;
     },
     async create(input) {
       if (hasSharedInventory) {
-        return map.color((await request('color_library?select=id,name,photo,created_at', {
+        return map.color((await request('color_library?select=id,name,photo,extra_price,created_at', {
           method: 'POST',
           body: { id: crypto.randomUUID(), ...input },
           prefer: 'return=representation'
@@ -27,7 +27,7 @@ window.MiniMakerApi = (() => {
     },
     async update(id, patch) {
       if (hasSharedInventory) {
-        return map.color((await request(`color_library?id=eq.${encodeURIComponent(id)}&select=id,name,photo,created_at`, {
+        return map.color((await request(`color_library?id=eq.${encodeURIComponent(id)}&select=id,name,photo,extra_price,created_at`, {
           method: 'PATCH',
           body: patch,
           prefer: 'return=representation'
@@ -55,13 +55,13 @@ window.MiniMakerApi = (() => {
   const designs = {
     async list() {
       if (hasSharedInventory) {
-        return (await request('design_library?select=id,name,photo,created_at&order=created_at.asc')).map(map.design);
+        return (await request('design_library?select=id,name,photo,size_category,base_price,created_at&order=created_at.asc')).map(map.design);
       }
       return storage.loadState().designLibrary;
     },
     async create(input) {
       if (hasSharedInventory) {
-        return map.design((await request('design_library?select=id,name,photo,created_at', {
+        return map.design((await request('design_library?select=id,name,photo,size_category,base_price,created_at', {
           method: 'POST',
           body: { id: crypto.randomUUID(), ...input },
           prefer: 'return=representation'
@@ -75,7 +75,7 @@ window.MiniMakerApi = (() => {
     },
     async update(id, patch) {
       if (hasSharedInventory) {
-        return map.design((await request(`design_library?id=eq.${encodeURIComponent(id)}&select=id,name,photo,created_at`, {
+        return map.design((await request(`design_library?id=eq.${encodeURIComponent(id)}&select=id,name,photo,size_category,base_price,created_at`, {
           method: 'PATCH',
           body: patch,
           prefer: 'return=representation'
