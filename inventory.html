@@ -27,11 +27,10 @@
       <div id="designGrid" class="grid"></div>
       <p id="designPicked" class="selected">Pick a design first</p>
 
-      <h2>Choose color</h2>
+      <h2>Choose one or more colors</h2>
       <div id="colorGrid" class="grid"></div>
       <p id="colorPicked" class="selected">Pick one or more colors</p>
 
-      <button id="addVariant" type="button">Add selected color</button>
       <div id="variantList"></div>
 
       <label>Ready now quantity<input id="qty" type="number" min="1" value="1"></label>
@@ -61,7 +60,7 @@
 
     let chosen = [];
     let selectedDesignId = '';
-    let selectedColorId = '';
+    let selectedColorIds = [];
 
     function renderDebug(state) {
       $('debugDesignCount').textContent = String(state.designLibrary.length);
@@ -70,14 +69,36 @@
       $('debugColorNames').textContent = state.colorLibrary.length ? state.colorLibrary.map(c => c.name).join(', ') : 'None';
     }
 
+    function syncChosenFromSelection(state) {
+      const design = state.designLibrary.find(d => d.id === selectedDesignId);
+      const basePrice = Number(design?.basePrice || 5);
+      chosen = state.colorLibrary
+        .filter(color => selectedColorIds.includes(color.id))
+        .map(color => ({
+          color: color.name,
+          photo: color.photo,
+          price: basePrice + Number(color.extraPrice || 0)
+        }));
+
+      if (design && chosen.length) {
+        $('priceSummary').textContent = `${design.name} base ${money(basePrice)}. Selected colors: ${chosen.map(variant => `${variant.color} ${money(variant.price)}`).join(', ')}`;
+      } else {
+        $('priceSummary').textContent = '';
+      }
+
+      renderChosen();
+    }
+
     function renderPickers() {
       const state = readState();
       renderDebug(state);
+
       $('designGrid').innerHTML = state.designLibrary.length
         ? state.designLibrary.map(d => `<button type="button" class="pick-card ${selectedDesignId === d.id ? 'active' : ''}" data-design="${d.id}"><img class="photo" src="${d.photo}" alt="${esc(d.name)}"><strong>${esc(d.name)}</strong></button>`).join('')
         : '<p>Add a design first.</p>';
+
       $('colorGrid').innerHTML = state.colorLibrary.length
-        ? state.colorLibrary.map(c => `<button type="button" class="pick-card ${selectedColorId === c.id ? 'active' : ''}" data-color="${c.id}"><img class="photo" src="${c.photo}" alt="${esc(c.name)}"><strong>${esc(c.name)}</strong></button>`).join('')
+        ? state.colorLibrary.map(c => `<button type="button" class="pick-card ${selectedColorIds.includes(c.id) ? 'active' : ''}" data-color="${c.id}"><img class="photo" src="${c.photo}" alt="${esc(c.name)}"><strong>${esc(c.name)}</strong></button>`).join('')
         : '<p>Add a color first.</p>';
 
       document.querySelectorAll('[data-design]').forEach(button => {
@@ -85,22 +106,35 @@
           selectedDesignId = button.dataset.design;
           const design = state.designLibrary.find(d => d.id === selectedDesignId);
           $('designPicked').textContent = design ? `Picked design: ${design.name}` : 'Pick a design first';
+          syncChosenFromSelection(state);
           renderPickers();
         };
       });
 
       document.querySelectorAll('[data-color]').forEach(button => {
         button.onclick = () => {
-          selectedColorId = button.dataset.color;
-          const color = state.colorLibrary.find(c => c.id === selectedColorId);
-          $('colorPicked').textContent = color ? `Picked color: ${color.name}` : 'Pick one or more colors';
+          const colorId = button.dataset.color;
+          if (selectedColorIds.includes(colorId)) {
+            selectedColorIds = selectedColorIds.filter(id => id !== colorId);
+          } else {
+            selectedColorIds = [...selectedColorIds, colorId];
+          }
+
+          const pickedColors = state.colorLibrary.filter(c => selectedColorIds.includes(c.id));
+          $('colorPicked').textContent = pickedColors.length
+            ? `Picked colors: ${pickedColors.map(c => c.name).join(', ')}`
+            : 'Pick one or more colors';
+
+          syncChosenFromSelection(state);
           renderPickers();
         };
       });
     }
 
     function renderChosen() {
-      $('variantList').innerHTML = chosen.length ? chosen.map(v => colorChip(v)).join(' ') : '<p>No colors added yet.</p>';
+      $('variantList').innerHTML = chosen.length
+        ? chosen.map(v => colorChip(v)).join(' ')
+        : '<p>No colors added yet.</p>';
     }
 
     async function editInventory(id) {
@@ -130,6 +164,7 @@
       await loadSharedData();
       const state = readState();
       renderDebug(state);
+
       $('inventoryGrid').innerHTML = state.products.length
         ? state.products.map(p => `<div class="list-row"><strong>${esc(p.name)}</strong><br><img class="photo" src="${p.photo || ''}" alt="${esc(p.name)}"><p>${p.qty} ready now · ${money(p.price)}</p><p>${(p.variants || []).map(colorChip).join(' ')}</p><div class="entity-actions"><button class="inline secondary" data-edit-item="${p.id}">Edit</button><button class="inline danger" data-delete-item="${p.id}">Delete</button></div></div>`).join('')
         : '<p>No toys yet.</p>';
@@ -139,30 +174,26 @@
       renderPickers();
     }
 
-    $('addVariant').onclick = () => {
-      const state = readState();
-      const color = state.colorLibrary.find(c => c.id === selectedColorId);
-      if (!color) return alert('Pick a color first.');
-      if (chosen.some(v => v.color === color.name)) return;
-      const design = state.designLibrary.find(d => d.id === selectedDesignId);
-      const basePrice = Number(design?.basePrice || 5);
-      const extraPrice = Number(color.extraPrice || 0);
-      chosen.push({ color: color.name, photo: color.photo, price: basePrice + extraPrice });
-      $('priceSummary').textContent = `${design?.name || 'Toy'} base $${basePrice.toFixed(2)} + ${color.name} extra $${extraPrice.toFixed(2)} = $${(basePrice + extraPrice).toFixed(2)}`;
-      renderChosen();
-    };
-
     $('saveToy').onclick = async () => {
       const state = readState();
       const design = state.designLibrary.find(d => d.id === selectedDesignId);
       if (!design) return alert('Pick a design first.');
-      if (!chosen.length) return alert('Add at least one color.');
+      if (!chosen.length) return alert('Pick at least one color.');
+
       const qty = Number($('qty').value);
       const price = Math.min(...chosen.map(variant => Number(variant.price || design.basePrice || 5)));
-      const created = await createInventoryItem({ name: design.name, qty, price, photo: design.photo, variants: chosen });
+      const created = await createInventoryItem({
+        name: design.name,
+        qty,
+        price,
+        photo: design.photo,
+        variants: chosen
+      });
+
       $('status').textContent = `Added ${created.name} to inventory.`;
       chosen = [];
-      selectedColorId = '';
+      selectedColorIds = [];
+      $('colorPicked').textContent = 'Pick one or more colors';
       $('priceSummary').textContent = '';
       renderChosen();
       await renderInventory();
