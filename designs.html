@@ -26,10 +26,12 @@
   <script src="assets/js/lib/images.js"></script>
   <script src="assets/js/lib/storage.js"></script>
   <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/app/storage-banner.js"></script>
   <script src="assets/js/api/index.js"></script>
   <script src="assets/js/app/admin-common.js"></script>
   <script>
-    MiniMakerAdmin.requireAccess();
+    (async () => {
+    await MiniMakerAdmin.requireAccess();
     const { $, readState, loadSharedData, createDesign, updateDesign, deleteDesign, esc } = MiniMakerAdmin;
     const PRICE_CATALOG = { small: 5, medium: 7, large: 9 };
     const SIZE_LABELS = { small: 'Small', medium: 'Medium', large: 'Large' };
@@ -79,6 +81,7 @@
       render();
     };
     render();
+    })().catch(() => {});
   </script>
 </body>
 </html>

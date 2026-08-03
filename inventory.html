@@ -51,11 +51,13 @@
   <script src="assets/js/models/mappers.js"></script>
   <script src="assets/js/lib/storage.js"></script>
   <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/app/storage-banner.js"></script>
   <script src="assets/js/api/index.js"></script>
   <script src="assets/js/app/admin-common.js"></script>
   <script>
+    (async () => {
     const Admin = MiniMakerAdmin;
-    Admin.requireAccess();
+    await Admin.requireAccess();
     const { $, readState, colorChip, createInventoryItem, updateInventoryItem, deleteInventoryItem, loadSharedData, esc, money } = Admin;
 
     let chosen = [];
@@ -201,6 +203,7 @@
 
     renderChosen();
     renderInventory();
+    })().catch(() => {});
   </script>
 </body>
 </html>

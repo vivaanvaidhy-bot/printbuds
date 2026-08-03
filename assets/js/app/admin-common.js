@@ -35,18 +35,62 @@ window.MiniMakerAdmin = (() => {
     sessionStorage.setItem(SESSION_KEY, String(Date.now() + SESSION_MINUTES * 60 * 1000));
   }
 
-  function requireAccess() {
+  function lockScreen(message) {
+    document.body.innerHTML = `<main style="max-width:520px;margin:40px auto;padding:0 16px"><div style="background:#fff;border:1px solid #e4e3ee;border-radius:19px;padding:24px"><h1 style="margin-top:0">Dashboard locked</h1><p>${message}</p><p><a href="./index.html">Go to customer order page</a></p></div></main>`;
+  }
+
+  async function requireAccess() {
     if (sessionUnlocked()) return;
     const current = readState();
+
+    if (hasSharedInventory) {
+      try {
+        const pinStatus = await api.adminPin.status();
+        if (!pinStatus.configured) {
+          const firstPin = prompt('Create one shared four-digit PIN for kids and parents to manage the shop.');
+          if (!/^\d{4}$/.test(firstPin || '')) {
+            lockScreen('Please reload and choose exactly four numbers.');
+            throw new Error('PIN required');
+          }
+          const confirmPin = prompt('Enter the PIN one more time.');
+          if (confirmPin !== firstPin) {
+            lockScreen('The PINs did not match.');
+            throw new Error('PIN mismatch');
+          }
+          await api.adminPin.setup(firstPin);
+          unlockSession();
+          return;
+        }
+
+        const enteredPin = prompt('Enter the shared shop PIN.');
+        if (!/^\d{4}$/.test(enteredPin || '')) {
+          lockScreen('Ask a parent or shop helper for the 4-digit PIN, then open the dashboard again.');
+          throw new Error('Wrong PIN');
+        }
+        const verified = await api.adminPin.verify(enteredPin);
+        if (!verified.ok) {
+          lockScreen('Ask a parent or shop helper for the 4-digit PIN, then open the dashboard again.');
+          throw new Error('Wrong PIN');
+        }
+        unlockSession();
+        return;
+      } catch (error) {
+        if (!document.body.textContent.includes('Dashboard locked')) {
+          lockScreen(error.message || 'Could not verify the shared PIN.');
+        }
+        throw error;
+      }
+    }
+
     if (!current.settings.adultPin) {
       const firstPin = prompt('Create one four-digit PIN for kids and parents to manage the shop.');
       if (!/^\d{4}$/.test(firstPin || '')) {
-        document.body.innerHTML = '<main style="max-width:520px;margin:40px auto;padding:0 16px"><div style="background:#fff;border:1px solid #e4e3ee;border-radius:19px;padding:24px"><h1 style="margin-top:0">Dashboard locked</h1><p>Please reload and choose exactly four numbers.</p><p><a href="./index.html">Go to customer order page</a></p></div></main>';
+        lockScreen('Please reload and choose exactly four numbers.');
         throw new Error('PIN required');
       }
       const confirmPin = prompt('Enter the PIN one more time.');
       if (confirmPin !== firstPin) {
-        document.body.innerHTML = '<main style="max-width:520px;margin:40px auto;padding:0 16px"><div style="background:#fff;border:1px solid #e4e3ee;border-radius:19px;padding:24px"><h1 style="margin-top:0">Dashboard locked</h1><p>The PINs did not match.</p><p><a href="./index.html">Go to customer order page</a></p></div></main>';
+        lockScreen('The PINs did not match.');
         throw new Error('PIN mismatch');
       }
       current.settings.adultPin = firstPin;
@@ -55,7 +99,7 @@ window.MiniMakerAdmin = (() => {
       return;
     }
     if (prompt('Enter the shop PIN.') !== current.settings.adultPin) {
-      document.body.innerHTML = '<main style="max-width:520px;margin:40px auto;padding:0 16px"><div style="background:#fff;border:1px solid #e4e3ee;border-radius:19px;padding:24px"><h1 style="margin-top:0">Dashboard locked</h1><p>Ask a parent or shop helper for the 4-digit PIN, then open the dashboard again.</p><p><a href="./index.html">Go to customer order page</a></p></div></main>';
+      lockScreen('Ask a parent or shop helper for the 4-digit PIN, then open the dashboard again.');
       throw new Error('Wrong PIN');
     }
     unlockSession();

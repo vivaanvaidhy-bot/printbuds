@@ -55,11 +55,20 @@ create table if not exists public.design_library (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.app_admin_settings (
+  id uuid primary key default gen_random_uuid(),
+  setting_key text not null unique,
+  pin_hash text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.inventory_items enable row level security;
 alter table public.sale_events enable row level security;
 alter table public.customer_orders enable row level security;
 alter table public.color_library enable row level security;
 alter table public.design_library enable row level security;
+alter table public.app_admin_settings enable row level security;
 
 drop policy if exists "inventory public access" on public.inventory_items;
 create policy "inventory public access"
@@ -75,6 +84,8 @@ alter table public.customer_orders add column if not exists color text not null 
 alter table public.color_library add column if not exists extra_price numeric(10, 2) not null default 0;
 alter table public.design_library add column if not exists size_category text not null default 'small';
 alter table public.design_library add column if not exists base_price numeric(10, 2) not null default 5;
+alter table public.app_admin_settings add column if not exists setting_key text;
+alter table public.app_admin_settings add column if not exists pin_hash text;
 
 drop policy if exists "sales public access" on public.sale_events;
 create policy "sales public access"
@@ -90,6 +101,7 @@ grant select, insert, update, delete on public.sale_events to anon;
 grant select, insert, update, delete on public.customer_orders to anon;
 grant select, insert, update, delete on public.color_library to anon;
 grant select, insert, update, delete on public.design_library to anon;
+revoke all on public.app_admin_settings from anon;
 
 drop policy if exists "orders public access" on public.customer_orders;
 create policy "orders public access"

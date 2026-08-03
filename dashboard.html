@@ -54,10 +54,11 @@
   <script src="assets/js/models/mappers.js"></script>
   <script src="assets/js/lib/storage.js"></script>
   <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/app/storage-banner.js"></script>
   <script src="assets/js/api/index.js"></script>
   <script src="assets/js/app/admin-common.js"></script>
   <script>
-    MiniMakerAdmin.requireAccess();
+    MiniMakerAdmin.requireAccess().catch(() => {});
   </script>
 </body>
 </html>

@@ -3,14 +3,19 @@ window.MiniMakerApiClient = (() => {
   const supabaseAnonKey = (window.MINI_MAKER_SUPABASE_ANON_KEY || '').trim();
   const hasSharedInventory = Boolean(supabaseUrl && supabaseAnonKey);
 
-  async function request(path, options = {}) {
-    const { method = 'GET', body, prefer } = options;
+  function authHeaders(body, prefer) {
     const headers = {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${supabaseAnonKey}`
     };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (prefer) headers.Prefer = prefer;
+    return headers;
+  }
+
+  async function request(path, options = {}) {
+    const { method = 'GET', body, prefer } = options;
+    const headers = authHeaders(body, prefer);
     const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
       method,
       headers,
@@ -28,5 +33,18 @@ window.MiniMakerApiClient = (() => {
     return response.json();
   }
 
-  return { hasSharedInventory, request };
+  async function requestFunction(name, payload = {}) {
+    const response = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
+      method: 'POST',
+      headers: authHeaders(payload),
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || data.message || `Function request failed (${response.status}).`);
+    }
+    return data;
+  }
+
+  return { hasSharedInventory, request, requestFunction };
 })();
