@@ -22,9 +22,16 @@ function findVariant(product, color) {
   return colorOptions(product).find(variant => variant.color === color) || colorOptions(product)[0];
 }
 
+function priceRange(product) {
+  const prices = colorOptions(product).map(variant => Number(variant.price || 0));
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? money(min) : `${money(min)} - ${money(max)}`;
+}
+
 function fillColorSelect(product, selectedColor = '') {
   const variants = colorOptions(product);
-  $('orderColor').innerHTML = variants.map(variant => `<option value="${esc(variant.color)}">${esc(variant.color)} - ${money(variant.price)}</option>`).join('');
+  $('orderColor').innerHTML = variants.map(variant => `<option value="${esc(variant.color)}">${esc(variant.color)}</option>`).join('');
   $('orderColor').value = selectedColor && variants.some(variant => variant.color === selectedColor) ? selectedColor : variants[0].color;
 }
 
@@ -37,7 +44,7 @@ function renderOrderColorPreview() {
 
 function render() {
   $('customerShop').innerHTML = state.products.length
-    ? state.products.map(product => `<button type="button" class="shop-card" data-order="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge">From ${money(Math.min(...colorOptions(product).map(variant => variant.price)))}</span><br><span class="small">${product.qty} ready now · any listed color can be ordered</span><div style="margin-top:8px">${colorOptions(product).map(variant => `<span class="badge" style="display:inline-flex;align-items:center">${variant.photo ? `<img src="${variant.photo}" alt="${esc(variant.color)}" style="width:18px;height:18px;border-radius:999px;object-fit:cover;vertical-align:middle;margin-right:6px">` : ''}${esc(variant.color)} ${money(variant.price)}</span>`).join(' ')}</div></button>`).join('')
+    ? state.products.map(product => `<button type="button" class="shop-card" data-order="${product.id}"><img class="photo" src="${product.photo || ''}" alt="${esc(product.name)}"><strong>${esc(product.name)}</strong><br><span class="badge">${priceRange(product)}</span><br><span class="small">${product.qty} ready now · choose a color to see the exact price</span></button>`).join('')
     : '<p class="empty">No toys are ready to order yet.</p>';
 
   $('orders').innerHTML = state.orders.length
@@ -55,7 +62,7 @@ function openOrder(id) {
   $('orderTitle').textContent = `Order ${orderProduct.name}`;
   $('orderPhoto').src = orderProduct.photo || '';
   $('orderQty').value = '1';
-  $('orderInventoryHint').textContent = `${orderProduct.qty} ready now. Customers can still request any listed color, and you can print more if needed.`;
+  $('orderInventoryHint').textContent = `${orderProduct.qty} ready now. Price range: ${priceRange(orderProduct)}.`;
   fillColorSelect(orderProduct);
   renderOrderColorPreview();
   setStatus('orderFormStatus', '');

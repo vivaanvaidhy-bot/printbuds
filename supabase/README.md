@@ -9,3 +9,8 @@
 7. Publish the website again.
 
 The app will then share inventory and sale records across iPads.
+
+For the shared admin PIN:
+
+8. Deploy the Supabase Edge Function in `supabase/functions/admin-pin/index.ts`.
+9. Keep using the app with the same shared 4-digit PIN across all devices.

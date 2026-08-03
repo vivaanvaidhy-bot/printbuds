@@ -1,2 +1,54 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reports</title><link rel="stylesheet" href="assets/css/base.css"><link rel="stylesheet" href="assets/css/admin.css"></head><body><header><h1>Step 5: Reports</h1><a class="toplink" href="./dashboard.html">Back to dashboard</a></header><main class="wrap"><div class="stat-grid"><div class="stat"><span>Toys sold</span><strong id="sold">0</strong></div><div class="stat"><span>Given free</span><strong id="free">0</strong></div><div class="stat"><span>Broken</span><strong id="broken">0</strong></div><div class="stat"><span>Pending print</span><strong id="pending">0</strong></div><div class="stat"><span>Completed orders</span><strong id="completed">0</strong></div></div></main><script src="supabase-config.js"></script><script src="assets/js/models/defaults.js"></script><script src="assets/js/models/mappers.js"></script><script src="assets/js/lib/storage.js"></script><script src="assets/js/api/client.js"></script><script src="assets/js/api/index.js"></script><script src="assets/js/app/admin-common.js"></script><script>const A=MiniMakerAdmin;A.requireAccess();const {readState,loadSharedData}=A;function total(records,type){return records.filter(r=>r.recordType===type).reduce((s,r)=>s+r.qty,0)}async function render(){await loadSharedData();const s=readState();document.getElementById('sold').textContent=total(s.records,'sale');document.getElementById('free').textContent=total(s.records,'free');document.getElementById('broken').textContent=total(s.records,'broken');document.getElementById('pending').textContent=s.orders.filter(o=>o.status==='pending_print').length;document.getElementById('completed').textContent=s.orders.filter(o=>o.status==='completed'||o.status==='fulfilled').length;}render();</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reports</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+  <header>
+    <h1>Step 5: Reports</h1>
+    <a class="toplink" href="./dashboard.html">Back to dashboard</a>
+  </header>
+
+  <main class="wrap">
+    <div class="stat-grid">
+      <div class="stat"><span>Toys sold</span><strong id="sold">0</strong></div>
+      <div class="stat"><span>Given free</span><strong id="free">0</strong></div>
+      <div class="stat"><span>Broken</span><strong id="broken">0</strong></div>
+      <div class="stat"><span>Pending print</span><strong id="pending">0</strong></div>
+      <div class="stat"><span>Completed orders</span><strong id="completed">0</strong></div>
+    </div>
+  </main>
+
+  <script src="supabase-config.js"></script>
+  <script src="assets/js/models/defaults.js"></script>
+  <script src="assets/js/models/mappers.js"></script>
+  <script src="assets/js/lib/storage.js"></script>
+  <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/app/storage-banner.js"></script>
+  <script src="assets/js/api/index.js"></script>
+  <script src="assets/js/app/admin-common.js"></script>
+  <script>
+    (async () => {
+      const A = MiniMakerAdmin;
+      await A.requireAccess();
+      const { readState, loadSharedData } = A;
+
+      function total(records, type) {
+        return records.filter(record => record.recordType === type).reduce((sum, record) => sum + record.qty, 0);
+      }
+
+      await loadSharedData();
+      const state = readState();
+      document.getElementById('sold').textContent = total(state.records, 'sale');
+      document.getElementById('free').textContent = total(state.records, 'free');
+      document.getElementById('broken').textContent = total(state.records, 'broken');
+      document.getElementById('pending').textContent = state.orders.filter(order => order.status === 'pending_print').length;
+      document.getElementById('completed').textContent = state.orders.filter(order => order.status === 'completed' || order.status === 'fulfilled').length;
+    })().catch(() => {});
+  </script>
+</body>
+</html>

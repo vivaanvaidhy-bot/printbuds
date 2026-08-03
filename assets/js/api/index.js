@@ -1,5 +1,5 @@
 window.MiniMakerApi = (() => {
-  const { hasSharedInventory, request } = window.MiniMakerApiClient;
+  const { hasSharedInventory, request, requestFunction } = window.MiniMakerApiClient;
   const map = window.MiniMakerMappers;
   const storage = window.MiniMakerStorage;
   const today = () => new Date().toISOString().slice(0, 10);
@@ -287,5 +287,31 @@ window.MiniMakerApi = (() => {
     }
   };
 
-  return { hasSharedInventory, colors, designs, inventory, orders, sales };
+  const adminPin = {
+    async status() {
+      if (!hasSharedInventory) {
+        const local = storage.loadState();
+        return { configured: Boolean(local.settings?.adultPin) };
+      }
+      return requestFunction('admin-pin', { action: 'status' });
+    },
+    async setup(pin) {
+      if (!hasSharedInventory) {
+        return storage.withLocalState(state => {
+          state.settings.adultPin = pin;
+          return { configured: true };
+        });
+      }
+      return requestFunction('admin-pin', { action: 'setup', pin });
+    },
+    async verify(pin) {
+      if (!hasSharedInventory) {
+        const local = storage.loadState();
+        return { ok: local.settings?.adultPin === pin };
+      }
+      return requestFunction('admin-pin', { action: 'verify', pin });
+    }
+  };
+
+  return { hasSharedInventory, colors, designs, inventory, orders, sales, adminPin };
 })();

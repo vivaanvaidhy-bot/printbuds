@@ -37,6 +37,9 @@ button.inline{margin-top:8px;margin-right:8px;padding:8px 10px;border-radius:10p
 .selected{margin:8px 0 0;font-weight:700}
 .chip{display:inline-flex;align-items:center;background:var(--mint);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;margin:4px}
 .status{font-size:14px;min-height:20px;margin-top:10px;color:#65657d}
+.storage-banner{margin:12px auto 0;max-width:960px;padding:10px 14px;border-radius:14px;font-size:14px;font-weight:700}
+.storage-banner.shared{background:#dff8ee;color:#184b3d;border:1px solid #8fd8b8}
+.storage-banner.local{background:#fff8d8;color:#6d5200;border:1px solid #f2d96b}
 .debug{background:var(--warn);border:1px solid var(--warn-line)}
 .debug p{margin:6px 0;font-size:14px}
 .entity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}

@@ -27,10 +27,12 @@
   <script src="assets/js/lib/images.js"></script>
   <script src="assets/js/lib/storage.js"></script>
   <script src="assets/js/api/client.js"></script>
+  <script src="assets/js/app/storage-banner.js"></script>
   <script src="assets/js/api/index.js"></script>
   <script src="assets/js/app/admin-common.js"></script>
   <script>
-    MiniMakerAdmin.requireAccess();
+    (async () => {
+    await MiniMakerAdmin.requireAccess();
     const { $, readState, loadSharedData, createColor, updateColor, deleteColor, esc } = MiniMakerAdmin;
     let photo = '';
     async function loadPhoto(file){ if(!file) return; photo = await MiniMakerImages.fileToDataUrl(file, { maxWidth: 640, maxHeight: 640, quality: 0.68 }); }
@@ -75,6 +77,7 @@
       render();
     };
     render();
+    })().catch(() => {});
   </script>
 </body>
 </html>
